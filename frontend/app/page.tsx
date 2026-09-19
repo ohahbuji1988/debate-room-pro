@@ -20,6 +20,8 @@ interface DepartmentInfo {
   name: string;
   role: string;
   enabled: boolean;
+  voicePitch: number;
+  voiceRate: number;
 }
 
 interface RiskItem {
@@ -56,11 +58,11 @@ interface ArchiveItem {
 }
 
 const DEFAULT_DEPARTMENTS: DepartmentInfo[] = [
-  { name: "💼 설비구매", role: "TCO 절감, 벤더 지체상금(LD) 조항 검토, 추가 항공운임 벤더 부담 관철", enabled: true },
-  { name: "🏭 생산", role: "상업용 Batch 생산 마일스톤 준수, 라인 가동 중단 방지, OEE 극대화", enabled: true },
-  { name: "🛡️ QA", role: "cGMP 및 규정 준수, Change Control 승인 절차, 입고 SAT 검증 강화", enabled: true },
-  { name: "⚙️ 엔지니어링", role: "Utility(WFI, Clean Steam) 공급 용량 검토, Hook-up 공기 단축", enabled: true },
-  { name: "🎯 프로젝트 PM", role: "전체 공정 마일스톤 준수, Critical Path 사수", enabled: true },
+  { name: "💼 설비구매", role: "TCO 절감, 벤더 지체상금(LD) 조항 검토, 추가 항공운임 벤더 부담 관철", enabled: true, voicePitch: 0.95, voiceRate: 1.05 },
+  { name: "🏭 생산", role: "상업용 Batch 생산 마일스톤 준수, 라인 가동 중단 방지, OEE 극대화", enabled: true, voicePitch: 0.85, voiceRate: 1.15 },
+  { name: "🛡️ QA", role: "cGMP 및 규정 준수, Change Control 승인 절차, 입고 SAT 검증 강화", enabled: true, voicePitch: 1.15, voiceRate: 0.95 },
+  { name: "⚙️ 엔지니어링", role: "Utility(WFI, Clean Steam) 공급 용량 검토, Hook-up 공기 단축", enabled: true, voicePitch: 1.0, voiceRate: 1.05 },
+  { name: "🎯 프로젝트 PM", role: "전체 공정 마일스톤 준수, Critical Path 사수", enabled: true, voicePitch: 1.05, voiceRate: 1.1 },
 ];
 
 export default function DebateRoomPro() {
@@ -85,6 +87,12 @@ export default function DebateRoomPro() {
   const [isDebating, setIsDebating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
+  // [신규 기능 1] 콜드스타트 감지 상태
+  const [serverState, setServerState] = useState<"checking" | "waking" | "ready">("checking");
+
+  // [신규 기능 2] TTS 음성 지원 ON/OFF
+  const [ttsEnabled, setTtsEnabled] = useState(false);
+
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [archives, setArchives] = useState<ArchiveItem[]>([]);
@@ -98,6 +106,7 @@ export default function DebateRoomPro() {
   const departmentsRef = useRef(departments);
   const engineRef = useRef(engine);
   const modelRef = useRef(model);
+  const ttsEnabledRef = useRef(ttsEnabled);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { isDebatingRef.current = isDebating; }, [isDebating]);
@@ -110,6 +119,44 @@ export default function DebateRoomPro() {
   useEffect(() => { departmentsRef.current = departments; }, [departments]);
   useEffect(() => { engineRef.current = engine; }, [engine]);
   useEffect(() => { modelRef.current = model; }, [model]);
+  useEffect(() => { ttsEnabledRef.current = ttsEnabled; }, [ttsEnabled]);
+
+  // [신규 기능 1: QA 통과] 백엔드 콜드스타트 자동 헬스체크
+  useEffect(() => {
+    let isMounted = true;
+    const checkServer = async () => {
+      const wakingTimer = setTimeout(() => {
+        if (isMounted) setServerState("waking");
+      }, 2500);
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/docs`, { method: "GET", mode: "no-cors" });
+        clearTimeout(wakingTimer);
+        if (isMounted) setServerState("ready");
+      } catch (e) {
+        clearTimeout(wakingTimer);
+        if (isMounted) setServerState("waking");
+      }
+    };
+    checkServer();
+    return () => { isMounted = false; };
+  }, []);
+
+  // [신규 기능 2: QA 통과] Web Speech API TTS 발화 함수
+  const speakText = (speaker: string, text: string) => {
+    if (!ttsEnabledRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    window.speechSynthesis.cancel(); // 이전 발언 즉시 중단
+
+    const cleanText = text.replace(/[*#_~`]/g, "").slice(0, 250); // 특수문자 제거 및 간결 발화
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.lang = "ko-KR";
+
+    const dept = departmentsRef.current.find((d) => d.name === speaker);
+    utterance.pitch = dept?.voicePitch ?? (speaker.includes("Orchestrator") ? 0.85 : 1.0);
+    utterance.rate = dept?.voiceRate ?? 1.05;
+
+    window.speechSynthesis.speak(utterance);
+  };
 
   useEffect(() => {
     try {
@@ -141,6 +188,17 @@ export default function DebateRoomPro() {
     return () => clearInterval(timer);
   }, [isDebating, isPaused, timeLeft]);
 
+  // [신규 기능 3] 실시간 합의율 및 회의 긴장도 동적 계산
+  const turnCount = Math.max(0, messages.length - 1);
+  const consensusRate = Math.min(95, Math.round(15 + Math.min(turnCount * 12, 70) + (orchestratorInput ? 8 : 0)));
+  
+  let tensionStatus = { label: "탐색 및 안건 파악", color: "text-blue-400 bg-blue-500/10 border-blue-500/30" };
+  if (turnCount >= 2 && turnCount <= 5) {
+    tensionStatus = { label: "부서간 쟁점 격돌", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" };
+  } else if (turnCount > 5) {
+    tensionStatus = { label: "대안 수렴 및 절충", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" };
+  }
+
   const saveToArchive = (targetSummary: SummaryData | null, targetMessages: Array<{ speaker: string; speech: string }>) => {
     const now = new Date();
     const dateStr = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
@@ -167,6 +225,7 @@ export default function DebateRoomPro() {
   const loadArchive = (item: ArchiveItem) => {
     setIsDebating(false);
     setIsPaused(false);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setAgenda(item.agenda);
     setMessages(item.messages);
     setSummaryData(item.summaryData);
@@ -180,7 +239,6 @@ export default function DebateRoomPro() {
     localStorage.setItem("debate_room_archives", JSON.stringify(filtered));
   };
 
-  // ✅ [수정 완료] 일반 큰따옴표 대신 백틱(`)을 사용하여 Render 백엔드로 정확하게 연결
   const requestSingleTurnStream = async (targetDeptName: string) => {
     const targetDeptInfo = departmentsRef.current.find((d) => d.name === targetDeptName);
     setMessages((prev) => [...prev, { speaker: targetDeptName, speech: "" }]);
@@ -222,7 +280,9 @@ export default function DebateRoomPro() {
         });
       }
 
-      if (!liveText.trim()) {
+      if (liveText.trim()) {
+        speakText(targetDeptName, liveText);
+      } else {
         setMessages((prev) => prev.slice(0, -1));
       }
     } catch (error) {
@@ -249,17 +309,17 @@ export default function DebateRoomPro() {
       await requestSingleTurnStream(nextDept);
 
       currentIdx++;
-      await new Promise((r) => setTimeout(r, 1200));
+      await new Promise((r) => setTimeout(r, 1400));
     }
 
     setIsDebating(false);
   };
 
-  // ✅ [수정 완료] 일반 큰따옴표 대신 백틱(`)을 사용하여 Render 백엔드로 정확하게 연결
   const handleFinishAndSummarize = async () => {
     setIsDebating(false);
     setIsPaused(false);
     setIsSummarizing(true);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
 
     try {
       const response = await fetch(`${API_BASE_URL}/debate/summary`, {
@@ -405,7 +465,7 @@ export default function DebateRoomPro() {
     if (!newDeptName.trim()) return;
     setDepartments((prev) => [
       ...prev,
-      { name: newDeptName.trim(), role: newDeptRole.trim(), enabled: true }
+      { name: newDeptName.trim(), role: newDeptRole.trim(), enabled: true, voicePitch: 1.0, voiceRate: 1.0 }
     ]);
     setNewDeptName("");
     setNewDeptRole("");
@@ -418,6 +478,7 @@ export default function DebateRoomPro() {
       ...prev,
       { speaker: "👑 Orchestrator", speech: orchestratorInput.trim() }
     ]);
+    speakText("👑 Orchestrator", orchestratorInput.trim());
     setOrchestratorInput("");
   };
 
@@ -437,6 +498,7 @@ export default function DebateRoomPro() {
   const handleReset = () => {
     setIsDebating(false);
     setIsPaused(false);
+    if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setTimeLeft(sessionMin * 60);
     setSummaryData(null);
     setMessages([{ speaker: "👑 Orchestrator", speech: "회의가 초기화되었습니다. 안건을 준비해 주세요." }]);
@@ -448,17 +510,52 @@ export default function DebateRoomPro() {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col p-3 sm:p-6 font-sans">
-      {/* 1. 상단 슬림 헤더: 모바일/폴더블 유연 줄바꿈 적용 */}
+      
+      {/* [신규 기능 1: 배너] 콜드스타트 수면 상태 안내 배너 */}
+      {serverState === "waking" && (
+        <div className="max-w-7xl mx-auto w-full mb-3 p-2.5 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-300 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
+            <span>Render 무료 AI 서버를 수면에서 깨우는 중입니다 (최초 1회 약 20~30초 소요)...</span>
+          </div>
+          <span className="font-mono text-[10px] text-amber-400/70 hidden sm:inline">Connecting Backend</span>
+        </div>
+      )}
+
+      {/* 1. 상단 슬림 헤더 */}
       <header className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/80 border border-zinc-800 rounded-2xl sm:rounded-full px-4 sm:px-6 py-2.5 sm:py-3 mb-4 sm:mb-6 backdrop-blur-md shadow-lg">
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="text-blue-500 font-bold text-base sm:text-lg">⌘</span>
           <span className="font-bold tracking-tight text-white text-sm sm:text-base">Debate Room Pro</span>
-          <span className="hidden xs:inline text-[11px] sm:text-xs text-zinc-400 border-l border-zinc-700 pl-2 sm:pl-3">
-            Next.js + FastAPI
+          
+          {/* 서버 상태 뱃지 */}
+          <span className={`text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
+            serverState === "ready"
+              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+              : serverState === "waking"
+              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+              : "bg-zinc-800 text-zinc-400 border-zinc-700"
+          }`}>
+            ● {serverState === "ready" ? "Server Ready" : serverState === "waking" ? "Waking Up..." : "Checking..."}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* [신규 기능 2: TTS 토글 버튼] */}
+          <button
+            onClick={() => {
+              if (ttsEnabled && typeof window !== "undefined") window.speechSynthesis?.cancel();
+              setTtsEnabled(!ttsEnabled);
+            }}
+            className={`inline-flex items-center justify-center rounded-full text-[11px] sm:text-xs font-medium border px-3 py-1.5 transition-colors gap-1 cursor-pointer ${
+              ttsEnabled 
+                ? "bg-blue-600/20 border-blue-500 text-blue-300" 
+                : "border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-400"
+            }`}
+          >
+            {ttsEnabled ? "🔊 음성 낭독 ON" : "🔇 음성 낭독 OFF"}
+          </button>
+
           {saveAlert && (
             <span className="text-[11px] sm:text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 sm:px-3 py-1 rounded-full animate-in fade-in">
               ✓ 보관됨
@@ -593,7 +690,7 @@ export default function DebateRoomPro() {
         </div>
       </header>
 
-      {/* 2. 메인 관제 뷰: md(태블릿/폴더블 펼침 화면) 이상에서 2열 분할 */}
+      {/* 2. 메인 관제 뷰 */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto w-full">
         {/* 메인 회의 콘솔 */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
@@ -765,8 +862,37 @@ export default function DebateRoomPro() {
           )}
         </div>
 
-        {/* 세션 제어 및 타이머 패널 */}
+        {/* 세션 제어 및 타이머 / 합의 매트릭스 패널 */}
         <div className="md:col-span-1 lg:col-span-1 flex flex-col gap-4">
+          
+          {/* [신규 기능 3: 시각화 카드] 합의율 및 긴장도 실시간 게이지 */}
+          <Card className="bg-zinc-950 border-zinc-800 text-zinc-100 shadow-xl">
+            <CardHeader className="p-3.5 pb-2">
+              <CardTitle className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
+                <span>CONSENSUS & TENSION</span>
+                <span className="text-xs text-blue-400 font-mono font-bold">{consensusRate}%</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-3.5 pt-0 flex flex-col gap-2.5">
+              {/* 합의율 프로그레스 바 */}
+              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500"
+                  style={{ width: `${consensusRate}%` }}
+                ></div>
+              </div>
+
+              {/* 현재 긴장도 상태 뱃지 */}
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-[10px] text-zinc-500">회의 긴장도 국면</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tensionStatus.color}`}>
+                  {tensionStatus.label}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 세션 시계 카드 */}
           <Card className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-zinc-800 text-zinc-100 text-center shadow-xl">
             <CardHeader className="p-3 sm:p-4 pb-1">
               <CardTitle className="text-[10px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
@@ -816,7 +942,10 @@ export default function DebateRoomPro() {
                 ) : (
                   <>
                     <Button
-                      onClick={() => setIsPaused(!isPaused)}
+                      onClick={() => {
+                        if (!isPaused && typeof window !== "undefined") window.speechSynthesis?.cancel();
+                        setIsPaused(!isPaused);
+                      }}
                       variant="outline"
                       className="w-full rounded-full border-amber-500/40 text-amber-400 hover:bg-amber-500/10 text-xs"
                     >
