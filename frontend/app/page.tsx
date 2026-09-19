@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+// 🌐 인터넷에 배포된 Render 백엔드 주소
 const API_BASE_URL = "https://debate-room-backend.onrender.com";
 
 interface DepartmentInfo {
@@ -179,12 +180,13 @@ export default function DebateRoomPro() {
     localStorage.setItem("debate_room_archives", JSON.stringify(filtered));
   };
 
+  // ✅ [수정 완료] 일반 큰따옴표 대신 백틱(`)을 사용하여 Render 백엔드로 정확하게 연결
   const requestSingleTurnStream = async (targetDeptName: string) => {
     const targetDeptInfo = departmentsRef.current.find((d) => d.name === targetDeptName);
     setMessages((prev) => [...prev, { speaker: targetDeptName, speech: "" }]);
 
     try {
-      const response = await fetch("${API_BASE_URL}/debate/turn/stream", {
+      const response = await fetch(`${API_BASE_URL}/debate/turn/stream`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -253,13 +255,14 @@ export default function DebateRoomPro() {
     setIsDebating(false);
   };
 
+  // ✅ [수정 완료] 일반 큰따옴표 대신 백틱(`)을 사용하여 Render 백엔드로 정확하게 연결
   const handleFinishAndSummarize = async () => {
     setIsDebating(false);
     setIsPaused(false);
     setIsSummarizing(true);
 
     try {
-      const response = await fetch("${API_BASE_URL}/debate/summary", {
+      const response = await fetch(`${API_BASE_URL}/debate/summary`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -590,9 +593,9 @@ export default function DebateRoomPro() {
         </div>
       </header>
 
-      {/* 2. 메인 관제 뷰: md(태블릿/폴더블 펼침 화면) 이상에서 2열 분할 시작! */}
+      {/* 2. 메인 관제 뷰: md(태블릿/폴더블 펼침 화면) 이상에서 2열 분할 */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto w-full">
-        {/* 메인 회의 콘솔 (모바일: 전체, 폴더블 펼침: 좌측 2칸, 데스크톱: 좌측 3칸) */}
+        {/* 메인 회의 콘솔 */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
           {/* 안건 카드 */}
           <Card className="bg-zinc-950 border-zinc-800 text-zinc-100">
@@ -637,7 +640,7 @@ export default function DebateRoomPro() {
             </CardContent>
           </Card>
 
-          {/* 실시간 회의록 (모바일 화면 비율 최적화 높이) */}
+          {/* 실시간 회의록 */}
           <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 overflow-y-auto max-h-[42vh] sm:max-h-[440px] flex flex-col gap-2.5 sm:gap-3 shadow-inner">
             <div className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider flex justify-between">
               <span>Discussion Transcript (실시간 회의록)</span>
@@ -664,7 +667,7 @@ export default function DebateRoomPro() {
             <div ref={chatBottomRef} />
           </div>
 
-          {/* 조율자 개입 바: 모바일 대응 레이아웃 */}
+          {/* 조율자 지침 입력창 */}
           <form onSubmit={handleSendOrchestrator} className="flex flex-col sm:flex-row gap-2 bg-zinc-900/90 border border-blue-500/30 rounded-2xl p-2 shadow-lg shadow-blue-900/10">
             <div className="flex items-center gap-1.5 px-2">
               <span className="text-xs font-bold text-blue-400 whitespace-nowrap">👑 조율자 지침</span>
@@ -690,7 +693,7 @@ export default function DebateRoomPro() {
             </div>
           )}
 
-          {/* Executive Summary 카드 (모바일 1열, 데스크톱/폴더블 2열 그리드) */}
+          {/* Executive Summary 카드 */}
           {summaryData && (
             <div className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6 bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl animate-in fade-in duration-300">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
@@ -762,7 +765,7 @@ export default function DebateRoomPro() {
           )}
         </div>
 
-        {/* 세션 제어 및 타이머 패널 (모바일: 하단, 폴더블 펼침/데스크톱: 우측 컬럼) */}
+        {/* 세션 제어 및 타이머 패널 */}
         <div className="md:col-span-1 lg:col-span-1 flex flex-col gap-4">
           <Card className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-zinc-800 text-zinc-100 text-center shadow-xl">
             <CardHeader className="p-3 sm:p-4 pb-1">
