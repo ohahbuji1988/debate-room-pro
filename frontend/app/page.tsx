@@ -2,9 +2,6 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -12,6 +9,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+
+// 🧩 우리가 1, 2단계에서 만든 전용 레고 블록 2개 불러오기!
+import { ScenarioCard, ScenarioParams } from "@/components/debate/ScenarioCard";
+import { SessionPanel } from "@/components/debate/SessionPanel";
 
 // 🌐 인터넷에 배포된 Render 백엔드 주소
 const API_BASE_URL = "https://debate-room-backend.onrender.com";
@@ -67,10 +68,19 @@ const DEFAULT_DEPARTMENTS: DepartmentInfo[] = [
 
 export default function DebateRoomPro() {
   const [agenda, setAgenda] = useState("핵심 배양기 유럽 벤더 센서 수급난으로 Lead Time 8주 지연 통보 건");
+  
+  // 🎛️ [신규] 4대 정량 시나리오 파라미터 상태
+  const [params, setParams] = useState<ScenarioParams>({
+    delayWeeks: 8,
+    ldCapPercent: 5,
+    bufferWeeks: 3,
+    altCostDiff: 15,
+  });
+
   const [messages, setMessages] = useState<Array<{ speaker: string; speech: string }>>([
     {
       speaker: "👑 Orchestrator",
-      speech: "안건이 상정되었습니다. 유관부서 담당자분들은 핵심 리스크와 대안을 발언해 주십시오."
+      speech: "안건과 정량 조건이 상정되었습니다. 유관부서 담당자분들은 핵심 리스크와 수치 기반 대안을 발언해 주십시오."
     }
   ]);
 
@@ -87,10 +97,7 @@ export default function DebateRoomPro() {
   const [isDebating, setIsDebating] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
 
-  // [신규 기능 1] 콜드스타트 감지 상태
   const [serverState, setServerState] = useState<"checking" | "waking" | "ready">("checking");
-
-  // [신규 기능 2] TTS 음성 지원 ON/OFF
   const [ttsEnabled, setTtsEnabled] = useState(false);
 
   const [summaryData, setSummaryData] = useState<SummaryData | null>(null);
@@ -107,6 +114,7 @@ export default function DebateRoomPro() {
   const engineRef = useRef(engine);
   const modelRef = useRef(model);
   const ttsEnabledRef = useRef(ttsEnabled);
+  const paramsRef = useRef(params);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { isDebatingRef.current = isDebating; }, [isDebating]);
@@ -120,8 +128,9 @@ export default function DebateRoomPro() {
   useEffect(() => { engineRef.current = engine; }, [engine]);
   useEffect(() => { modelRef.current = model; }, [model]);
   useEffect(() => { ttsEnabledRef.current = ttsEnabled; }, [ttsEnabled]);
+  useEffect(() => { paramsRef.current = params; }, [params]);
 
-  // [신규 기능 1: QA 통과] 백엔드 콜드스타트 자동 헬스체크
+  // 서버 콜드스타트 감지
   useEffect(() => {
     let isMounted = true;
     const checkServer = async () => {
@@ -130,7 +139,7 @@ export default function DebateRoomPro() {
       }, 2500);
 
       try {
-        const res = await fetch(`${API_BASE_URL}/docs`, { method: "GET", mode: "no-cors" });
+        await fetch(`${API_BASE_URL}/docs`, { method: "GET", mode: "no-cors" });
         clearTimeout(wakingTimer);
         if (isMounted) setServerState("ready");
       } catch (e) {
@@ -142,12 +151,12 @@ export default function DebateRoomPro() {
     return () => { isMounted = false; };
   }, []);
 
-  // [신규 기능 2: QA 통과] Web Speech API TTS 발화 함수
+  // Web Speech TTS 발화
   const speakText = (speaker: string, text: string) => {
     if (!ttsEnabledRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel(); // 이전 발언 즉시 중단
+    window.speechSynthesis.cancel();
 
-    const cleanText = text.replace(/[*#_~`]/g, "").slice(0, 250); // 특수문자 제거 및 간결 발화
+    const cleanText = text.replace(/[*#_~`]/g, "").slice(0, 250);
     const utterance = new SpeechSynthesisUtterance(cleanText);
     utterance.lang = "ko-KR";
 
@@ -188,7 +197,7 @@ export default function DebateRoomPro() {
     return () => clearInterval(timer);
   }, [isDebating, isPaused, timeLeft]);
 
-  // [신규 기능 3] 실시간 합의율 및 회의 긴장도 동적 계산
+  // 실시간 합의율 및 회의 긴장도 계산
   const turnCount = Math.max(0, messages.length - 1);
   const consensusRate = Math.min(95, Math.round(15 + Math.min(turnCount * 12, 70) + (orchestratorInput ? 8 : 0)));
   
@@ -198,6 +207,12 @@ export default function DebateRoomPro() {
   } else if (turnCount > 5) {
     tensionStatus = { label: "대안 수렴 및 절충", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" };
   }
+
+  // AI에게 보낼 안건에 정량 파라미터를 자연스럽게 합쳐주는 도우미 함수
+  const getEnrichedAgenda = () => {
+    const p = paramsRef.current;
+    return `${agenda} [정량 리스크 조건: 납기지연 ${p.delayWeeks}주, 공정허용버퍼 ${p.bufferWeeks}주, LD상한 ${p.ldCapPercent}%, 대체벤더단가 +${p.altCostDiff}%]`;
+  };
 
   const saveToArchive = (targetSummary: SummaryData | null, targetMessages: Array<{ speaker: string; speech: string }>) => {
     const now = new Date();
@@ -248,11 +263,12 @@ export default function DebateRoomPro() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agenda: agenda,
+          agenda: getEnrichedAgenda(),
           department: targetDeptName,
           department_role: targetDeptInfo?.role || "",
           engine: engineRef.current,
           model: modelRef.current,
+          scenario_params: paramsRef.current,
           history: messagesRef.current.filter((m) => m.speech.trim() !== "")
         })
       });
@@ -326,9 +342,10 @@ export default function DebateRoomPro() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          agenda: agenda,
+          agenda: getEnrichedAgenda(),
           engine: engine,
           model: model,
+          scenario_params: paramsRef.current,
           history: messagesRef.current.filter((m) => m.speech.trim() !== "")
         })
       });
@@ -352,6 +369,7 @@ export default function DebateRoomPro() {
       day: "numeric"
     });
 
+    const p = paramsRef.current;
     const risksHtml = (summaryData.top_3_risks || []).map(r => `
       <li style="margin-bottom:8px;">
         <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; background:#f0f0f2; color:#111;">${r.level}</span>
@@ -413,8 +431,13 @@ export default function DebateRoomPro() {
       </div>
     </div>
 
-    <div class="section-title">1. Agenda & Context</div>
-    <div class="box-gray">${agenda}</div>
+    <div class="section-title">1. Agenda & Scenario Constraints</div>
+    <div class="box-gray">
+      <b>안건:</b> ${agenda}<br>
+      <span style="font-size: 11px; color: #0071e3; margin-top: 4px; display: inline-block;">
+        [정량 조건: 지연 ${p.delayWeeks}주 | 버퍼 ${p.bufferWeeks}주 | LD상한 ${p.ldCapPercent}% | 대체단가 +${p.altCostDiff}%]
+      </span>
+    </div>
 
     <div class="section-title">2. Bottom Line (최종 의사결정 권고)</div>
     <div class="box-decision">${summaryData.bottom_line}</div>
@@ -511,7 +534,7 @@ export default function DebateRoomPro() {
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col p-3 sm:p-6 font-sans">
       
-      {/* [신규 기능 1: 배너] 콜드스타트 수면 상태 안내 배너 */}
+      {/* 콜드스타트 수면 상태 안내 배너 */}
       {serverState === "waking" && (
         <div className="max-w-7xl mx-auto w-full mb-3 p-2.5 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-300 animate-in fade-in">
           <div className="flex items-center gap-2">
@@ -528,7 +551,6 @@ export default function DebateRoomPro() {
           <span className="text-blue-500 font-bold text-base sm:text-lg">⌘</span>
           <span className="font-bold tracking-tight text-white text-sm sm:text-base">Debate Room Pro</span>
           
-          {/* 서버 상태 뱃지 */}
           <span className={`text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
             serverState === "ready"
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
@@ -541,7 +563,6 @@ export default function DebateRoomPro() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* [신규 기능 2: TTS 토글 버튼] */}
           <button
             onClick={() => {
               if (ttsEnabled && typeof window !== "undefined") window.speechSynthesis?.cancel();
@@ -694,48 +715,19 @@ export default function DebateRoomPro() {
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto w-full">
         {/* 메인 회의 콘솔 */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
-          {/* 안건 카드 */}
-          <Card className="bg-zinc-950 border-zinc-800 text-zinc-100">
-            <CardHeader className="p-3.5 sm:p-4 pb-2">
-              <CardTitle className="text-xs sm:text-sm font-semibold text-zinc-300">회의 안건 (Agenda)</CardTitle>
-            </CardHeader>
-            <CardContent className="p-3.5 sm:p-4 pt-0 flex flex-col gap-2.5">
-              <Textarea
-                value={agenda}
-                onChange={(e) => setAgenda(e.target.value)}
-                disabled={isDebating}
-                placeholder="논의할 현안을 입력하세요..."
-                className="bg-zinc-900/80 border-zinc-800 focus-visible:ring-blue-500 resize-none h-16 text-xs sm:text-sm"
-              />
-
-              {/* 부서 선택 스크롤 탭 & 단독 발언 버튼 */}
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 pt-1">
-                <div className="flex gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
-                  {activeDepts.map((dept) => (
-                    <button
-                      key={dept.name}
-                      onClick={() => setSelectedDept(dept.name)}
-                      className={`shrink-0 px-2.5 sm:px-3 py-1.5 rounded-full text-[11px] sm:text-xs font-medium transition-all ${
-                        selectedDept === dept.name
-                          ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                          : "bg-zinc-900 text-zinc-400 hover:text-zinc-200 border border-zinc-800"
-                      }`}
-                    >
-                      {dept.name}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  onClick={() => requestSingleTurnStream(selectedDept)}
-                  disabled={isDebating}
-                  variant="outline"
-                  className="rounded-full text-[11px] sm:text-xs border-zinc-700 hover:bg-zinc-800 text-zinc-300 shrink-0 h-8"
-                >
-                  단독 발언 요청
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          
+          {/* 🧩 레고 1번 부품: 회의 안건 및 4대 숫자 다이얼 카드 장착! */}
+          <ScenarioCard
+            agenda={agenda}
+            setAgenda={setAgenda}
+            isDebating={isDebating}
+            activeDepts={activeDepts}
+            selectedDept={selectedDept}
+            setSelectedDept={setSelectedDept}
+            onRequestSingleTurn={requestSingleTurnStream}
+            params={params}
+            setParams={setParams}
+          />
 
           {/* 실시간 회의록 */}
           <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 overflow-y-auto max-h-[42vh] sm:max-h-[440px] flex flex-col gap-2.5 sm:gap-3 shadow-inner">
@@ -862,125 +854,29 @@ export default function DebateRoomPro() {
           )}
         </div>
 
-        {/* 세션 제어 및 타이머 / 합의 매트릭스 패널 */}
-        <div className="md:col-span-1 lg:col-span-1 flex flex-col gap-4">
-          
-          {/* [신규 기능 3: 시각화 카드] 합의율 및 긴장도 실시간 게이지 */}
-          <Card className="bg-zinc-950 border-zinc-800 text-zinc-100 shadow-xl">
-            <CardHeader className="p-3.5 pb-2">
-              <CardTitle className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-                <span>CONSENSUS & TENSION</span>
-                <span className="text-xs text-blue-400 font-mono font-bold">{consensusRate}%</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3.5 pt-0 flex flex-col gap-2.5">
-              {/* 합의율 프로그레스 바 */}
-              <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-                <div 
-                  className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-                  style={{ width: `${consensusRate}%` }}
-                ></div>
-              </div>
-
-              {/* 현재 긴장도 상태 뱃지 */}
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[10px] text-zinc-500">회의 긴장도 국면</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tensionStatus.color}`}>
-                  {tensionStatus.label}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* 세션 시계 카드 */}
-          <Card className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-zinc-800 text-zinc-100 text-center shadow-xl">
-            <CardHeader className="p-3 sm:p-4 pb-1">
-              <CardTitle className="text-[10px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
-                SESSION CLOCK
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 sm:p-6 pt-0 flex flex-col items-center">
-              <div className="text-4xl sm:text-5xl font-extrabold font-mono tracking-tighter text-white my-1 sm:my-2">
-                {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-              </div>
-
-              <div className="w-full bg-zinc-800 h-1.5 sm:h-2 rounded-full overflow-hidden mb-3 sm:mb-4 shadow-inner">
-                <div
-                  className="bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-
-              {!isDebating && (
-                <div className="flex items-center gap-1.5 mb-3 sm:mb-4">
-                  <span className="text-xs text-zinc-400">시간:</span>
-                  {[1, 3, 5].map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => {
-                        setSessionMin(m);
-                        setTimeLeft(m * 60);
-                      }}
-                      className={`px-2.5 py-1 rounded-md text-xs font-semibold ${
-                        sessionMin === m ? "bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-500 hover:text-zinc-300"
-                      }`}
-                    >
-                      {m}분
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              <div className="w-full flex flex-col gap-2">
-                {!isDebating ? (
-                  <Button
-                    onClick={handleStart}
-                    className="w-full rounded-full bg-blue-600 hover:bg-blue-500 font-semibold text-xs py-4 sm:py-5 shadow-lg shadow-blue-600/30"
-                  >
-                    ▶ 핑퐁 토론 시작 ({sessionMin}분)
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      onClick={() => {
-                        if (!isPaused && typeof window !== "undefined") window.speechSynthesis?.cancel();
-                        setIsPaused(!isPaused);
-                      }}
-                      variant="outline"
-                      className="w-full rounded-full border-amber-500/40 text-amber-400 hover:bg-amber-500/10 text-xs"
-                    >
-                      {isPaused ? "▶ 재개하기" : "❚❚ 일시정지"}
-                    </Button>
-                    <Button
-                      onClick={handleFinishAndSummarize}
-                      variant="destructive"
-                      className="w-full rounded-full text-xs font-semibold"
-                    >
-                      ■ 종료 & 요약 보고
-                    </Button>
-                  </>
-                )}
-
-                {!isDebating && messages.length > 2 && !summaryData && (
-                  <Button
-                    onClick={handleFinishAndSummarize}
-                    variant="outline"
-                    className="w-full rounded-full text-xs border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
-                  >
-                    📋 요약 브리핑 생성
-                  </Button>
-                )}
-
-                <Button
-                  variant="ghost"
-                  onClick={handleReset}
-                  className="w-full rounded-full text-zinc-500 hover:text-zinc-300 text-xs mt-0.5"
-                >
-                  새 회의 준비 (Reset)
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+        {/* 🧩 레고 2번 부품: 세션 제어 및 타이머 / 합의 매트릭스 패널 장착! */}
+        <div className="md:col-span-1 lg:col-span-1">
+          <SessionPanel
+            consensusRate={consensusRate}
+            tensionStatus={tensionStatus}
+            mins={mins}
+            secs={secs}
+            progress={progress}
+            sessionMin={sessionMin}
+            setSessionMin={setSessionMin}
+            setTimeLeft={setTimeLeft}
+            isDebating={isDebating}
+            isPaused={isPaused}
+            onTogglePause={() => {
+              if (!isPaused && typeof window !== "undefined") window.speechSynthesis?.cancel();
+              setIsPaused(!isPaused);
+            }}
+            onStart={handleStart}
+            onFinishAndSummarize={handleFinishAndSummarize}
+            onReset={handleReset}
+            messagesCount={messages.length}
+            hasSummary={Boolean(summaryData)}
+          />
         </div>
       </div>
     </div>
