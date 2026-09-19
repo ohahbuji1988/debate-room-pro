@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 interface SessionPanelProps {
@@ -42,130 +41,132 @@ export function SessionPanel({
   hasSummary,
 }: SessionPanelProps) {
   return (
-    <div className="flex flex-col gap-4">
-      {/* 1. 합의율 및 긴장도 실시간 게이지 카드 */}
-      <Card className="bg-zinc-950 border-zinc-800 text-zinc-100 shadow-xl">
-        <CardHeader className="p-3.5 pb-2">
-          <CardTitle className="text-[10px] sm:text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center justify-between">
-            <span>CONSENSUS & TENSION</span>
-            <span className="text-xs text-blue-400 font-mono font-bold">{consensusRate}%</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3.5 pt-0 flex flex-col gap-2.5">
-          {/* 합의율 프로그레스 바 */}
-          <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
-            <div
-              className="bg-gradient-to-r from-blue-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-              style={{ width: `${consensusRate}%` }}
-            ></div>
-          </div>
+    <div className="flex flex-col gap-3">
+      {/* 1. 합의 지수 & 긴장도 매트릭스 (전시장 센서 패널) */}
+      <div className="bg-zinc-950 border border-zinc-800/80 p-4">
+        <div className="flex items-center justify-between pb-2 border-b border-zinc-900 mb-2.5">
+          <span className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 uppercase">
+            INDEX // CONSENSUS
+          </span>
+          <span className="text-xs font-mono font-bold text-lime-400">
+            {String(consensusRate).padStart(2, "0")}%
+          </span>
+        </div>
 
-          {/* 현재 긴장도 상태 뱃지 */}
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-[10px] text-zinc-500">회의 긴장도 국면</span>
-            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${tensionStatus.color}`}>
-              {tensionStatus.label}
+        {/* 얇은 극세사 인디케이터 바 */}
+        <div className="w-full bg-zinc-900 h-1 mb-3 overflow-hidden">
+          <div
+            className="bg-lime-400 h-full transition-all duration-700 ease-out"
+            style={{ width: `${consensusRate}%` }}
+          ></div>
+        </div>
+
+        <div className="flex items-center justify-between text-[10px] font-mono">
+          <span className="text-zinc-500 uppercase">DISCOURSE STAGE</span>
+          <span className="text-zinc-300 uppercase tracking-wide">
+            [ {tensionStatus.label} ]
+          </span>
+        </div>
+      </div>
+
+      {/* 2. 크로노미터 시계 & 볼드 액션 버튼 */}
+      <div className="bg-zinc-950 border border-zinc-800/80 p-4 flex flex-col items-center text-center">
+        <div className="w-full flex items-center justify-between pb-2 border-b border-zinc-900 mb-3">
+          <span className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 uppercase">
+            CHRONO // REMAINING
+          </span>
+          {isDebating && (
+            <span className="inline-flex items-center gap-1 text-[9px] font-mono text-lime-400 uppercase">
+              <span className="w-1.5 h-1.5 bg-lime-400 animate-ping"></span>
+              ACTIVE
             </span>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 2. 세션 시계 및 제어 버튼 카드 */}
-      <Card className="bg-gradient-to-b from-zinc-900 to-zinc-950 border-zinc-800 text-zinc-100 text-center shadow-xl">
-        <CardHeader className="p-3 sm:p-4 pb-1">
-          <CardTitle className="text-[10px] sm:text-[11px] font-bold text-zinc-500 uppercase tracking-widest">
-            SESSION CLOCK
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-4 sm:p-6 pt-0 flex flex-col items-center">
-          {/* 째깍째깍 전자시계 디스플레이 */}
-          <div className="text-4xl sm:text-5xl font-extrabold font-mono tracking-tighter text-white my-1 sm:my-2">
-            {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
-          </div>
-
-          {/* 남은 시간 게이지 막대 */}
-          <div className="w-full bg-zinc-800 h-1.5 sm:h-2 rounded-full overflow-hidden mb-3 sm:mb-4 shadow-inner">
-            <div
-              className="bg-gradient-to-r from-blue-500 via-indigo-500 to-emerald-400 h-full rounded-full transition-all duration-300"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-
-          {/* 회의 시간 선택 버튼 (1분, 3분, 5분) */}
-          {!isDebating && (
-            <div className="flex items-center gap-1.5 mb-3 sm:mb-4">
-              <span className="text-xs text-zinc-400">시간:</span>
-              {[1, 3, 5].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => {
-                    setSessionMin(m);
-                    setTimeLeft(m * 60);
-                  }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
-                    sessionMin === m ? "bg-zinc-700 text-white" : "bg-zinc-900 text-zinc-500 hover:text-zinc-300"
-                  }`}
-                >
-                  {m}분
-                </button>
-              ))}
-            </div>
           )}
+        </div>
 
-          {/* 조작 버튼 묶음 */}
-          <div className="w-full flex flex-col gap-2">
-            {!isDebating ? (
-              <Button
+        {/* 거대한 타이포그래피 시계 */}
+        <div className="text-5xl font-mono font-light tracking-tighter text-zinc-100 my-1">
+          {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+        </div>
+
+        {/* 미니멀 타임라인 */}
+        <div className="w-full bg-zinc-900 h-0.5 my-3">
+          <div
+            className="bg-zinc-400 h-full transition-all duration-300"
+            style={{ width: `${progress}%` }}
+          ></div>
+        </div>
+
+        {/* 회의 시간 선택기 */}
+        {!isDebating && (
+          <div className="flex items-center gap-1 mb-4">
+            {[1, 3, 5].map((m) => (
+              <button
+                key={m}
                 type="button"
-                onClick={onStart}
-                className="w-full rounded-full bg-blue-600 hover:bg-blue-500 font-semibold text-xs py-4 sm:py-5 shadow-lg shadow-blue-600/30"
+                onClick={() => {
+                  setSessionMin(m);
+                  setTimeLeft(m * 60);
+                }}
+                className={`px-3 py-0.5 text-[10px] font-mono transition-colors border ${
+                  sessionMin === m
+                    ? "bg-zinc-200 text-black border-zinc-200 font-bold"
+                    : "bg-transparent text-zinc-500 border-zinc-800 hover:border-zinc-600"
+                }`}
               >
-                ▶ 핑퐁 토론 시작 ({sessionMin}분)
-              </Button>
-            ) : (
-              <>
-                <Button
-                  type="button"
-                  onClick={onTogglePause}
-                  variant="outline"
-                  className="w-full rounded-full border-amber-500/40 text-amber-400 hover:bg-amber-500/10 text-xs"
-                >
-                  {isPaused ? "▶ 재개하기" : "❚❚ 일시정지"}
-                </Button>
-                <Button
-                  type="button"
-                  onClick={onFinishAndSummarize}
-                  variant="destructive"
-                  className="w-full rounded-full text-xs font-semibold"
-                >
-                  ■ 종료 & 요약 보고
-                </Button>
-              </>
-            )}
+                0{m}M
+              </button>
+            ))}
+          </div>
+        )}
 
-            {!isDebating && messagesCount > 2 && !hasSummary && (
-              <Button
+        {/* 조작 버튼 묶음 (아방가르드 스타일) */}
+        <div className="w-full flex flex-col gap-1.5">
+          {!isDebating ? (
+            <button
+              type="button"
+              onClick={onStart}
+              className="w-full py-3 bg-zinc-100 hover:bg-white text-black font-mono font-bold text-xs uppercase tracking-widest transition-all"
+            >
+              [ INITIATE DISCOURSE ]
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={onTogglePause}
+                className="w-full py-2 border border-zinc-700 hover:border-zinc-400 text-zinc-300 font-mono text-xs uppercase tracking-wider transition-colors"
+              >
+                {isPaused ? "[ RESUME ]" : "[ SUSPEND ]"}
+              </button>
+              <button
                 type="button"
                 onClick={onFinishAndSummarize}
-                variant="outline"
-                className="w-full rounded-full text-xs border-blue-500/40 text-blue-400 hover:bg-blue-500/10"
+                className="w-full py-2 bg-rose-950/40 border border-rose-800/80 hover:bg-rose-900/60 text-rose-300 font-mono text-xs uppercase tracking-wider transition-colors"
               >
-                📋 요약 브리핑 생성
-              </Button>
-            )}
+                [ TERMINATE & COMPILE ]
+              </button>
+            </>
+          )}
 
-            <Button
+          {!isDebating && messagesCount > 2 && !hasSummary && (
+            <button
               type="button"
-              variant="ghost"
-              onClick={onReset}
-              className="w-full rounded-full text-zinc-500 hover:text-zinc-300 text-xs mt-0.5"
+              onClick={onFinishAndSummarize}
+              className="w-full py-2 border border-zinc-700 hover:border-zinc-400 text-zinc-300 font-mono text-xs uppercase tracking-wider transition-colors"
             >
-              새 회의 준비 (Reset)
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+              [ COMPILE SUMMARY ]
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={onReset}
+            className="w-full py-1.5 text-zinc-600 hover:text-zinc-400 font-mono text-[10px] uppercase tracking-widest mt-1 transition-colors"
+          >
+            RESET ALL
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

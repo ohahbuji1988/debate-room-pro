@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -10,11 +9,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// 🧩 ui/debate 폴더 안의 레고 블록 2개
 import { ScenarioCard, ScenarioParamItem } from "@/components/ui/debate/ScenarioCard";
 import { SessionPanel } from "@/components/ui/debate/SessionPanel";
 
-// 🌐 인터넷에 배포된 Render 백엔드 주소
 const API_BASE_URL = "https://debate-room-backend.onrender.com";
 
 interface DepartmentInfo {
@@ -58,20 +55,19 @@ interface ArchiveItem {
   summaryData: SummaryData | null;
 }
 
-// 🎛️ 기본 프리셋 조건들 (기본 상태: 비활성화 OFF)
+const DEFAULT_DEPARTMENTS: DepartmentInfo[] = [
+  { name: "💼 설비구매", role: "TCO 절감, 벤더 지체상금(LD) 조항 검토, 추가 항공운임 벤더 부담 관철", enabled: true, voicePitch: 0.95, voiceRate: 1.05 },
+  { name: "🏭 생산", role: "상업용 Batch 생산 마일스톤 준수, 라인 가동 중단 방지, OEE 극대화", enabled: true, voicePitch: 0.85, voiceRate: 1.15 },
+  { name: "🛡️ QA", role: "cGMP 및 규정 준수, Change Control 승인 절차, 입고 SAT 검증 강화", enabled: true, voicePitch: 1.15, voiceRate: 0.95 },
+  { name: "⚙️ 엔지니어링", role: "Utility(WFI, Clean Steam) 공급 용량 검토, Hook-up 공기 단축", enabled: true, voicePitch: 1.0, voiceRate: 1.05 },
+  { name: "🎯 프로젝트 PM", role: "전체 공정 마일스톤 준수, Critical Path 사수", enabled: true, voicePitch: 1.05, voiceRate: 1.1 },
+];
+
 const INITIAL_PARAMS: ScenarioParamItem[] = [
   { id: "p1", label: "납기 지연", value: 8, unit: "주", step: 1, enabled: false },
   { id: "p2", label: "공정 버퍼", value: 3, unit: "주", step: 1, enabled: false },
   { id: "p3", label: "LD 상한", value: 5, unit: "%", step: 1, enabled: false },
   { id: "p4", label: "대체단가 차이", value: 15, unit: "%", step: 5, enabled: false },
-];
-
-// 🎛️ 기본 프리셋 조건들 (언제든 ON/OFF 및 삭제 가능)
-const INITIAL_PARAMS: ScenarioParamItem[] = [
-  { id: "p1", label: "납기 지연", value: 8, unit: "주", step: 1, enabled: true },
-  { id: "p2", label: "공정 버퍼", value: 3, unit: "주", step: 1, enabled: true },
-  { id: "p3", label: "LD 상한", value: 5, unit: "%", step: 1, enabled: true },
-  { id: "p4", label: "대체단가 차이", value: 15, unit: "%", step: 5, enabled: true },
 ];
 
 export default function DebateRoomPro() {
@@ -81,7 +77,7 @@ export default function DebateRoomPro() {
   const [messages, setMessages] = useState<Array<{ speaker: string; speech: string }>>([
     {
       speaker: "👑 Orchestrator",
-      speech: "안건이 상정되었습니다. 유관부서 담당자분들은 핵심 리스크와 대안을 발언해 주십시오."
+      speech: "안건이 상정되었습니다. 각 유관부서는 정량적 리스크와 상충되는 대안을 제시해 주십시오."
     }
   ]);
 
@@ -131,7 +127,6 @@ export default function DebateRoomPro() {
   useEffect(() => { ttsEnabledRef.current = ttsEnabled; }, [ttsEnabled]);
   useEffect(() => { paramsRef.current = params; }, [params]);
 
-  // 백엔드 콜드스타트 감지
   useEffect(() => {
     let isMounted = true;
     const checkServer = async () => {
@@ -152,7 +147,6 @@ export default function DebateRoomPro() {
     return () => { isMounted = false; };
   }, []);
 
-  // Web Speech TTS
   const speakText = (speaker: string, text: string) => {
     if (!ttsEnabledRef.current || typeof window === "undefined" || !("speechSynthesis" in window)) return;
     window.speechSynthesis.cancel();
@@ -171,11 +165,9 @@ export default function DebateRoomPro() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem("debate_room_archives");
-      if (saved) {
-        setArchives(JSON.parse(saved));
-      }
+      if (saved) setArchives(JSON.parse(saved));
     } catch (e) {
-      console.error("보관함 로드 실패:", e);
+      console.error(e);
     }
   }, []);
 
@@ -198,18 +190,16 @@ export default function DebateRoomPro() {
     return () => clearInterval(timer);
   }, [isDebating, isPaused, timeLeft]);
 
-  // 합의율 & 긴장도 계산
   const turnCount = Math.max(0, messages.length - 1);
   const consensusRate = Math.min(95, Math.round(15 + Math.min(turnCount * 12, 70) + (orchestratorInput ? 8 : 0)));
   
-  let tensionStatus = { label: "탐색 및 안건 파악", color: "text-blue-400 bg-blue-500/10 border-blue-500/30" };
+  let tensionStatus = { label: "EXPLORATION", color: "text-zinc-400" };
   if (turnCount >= 2 && turnCount <= 5) {
-    tensionStatus = { label: "부서간 쟁점 격돌", color: "text-rose-400 bg-rose-500/10 border-rose-500/30" };
+    tensionStatus = { label: "CRITICAL COLLISION", color: "text-rose-400" };
   } else if (turnCount > 5) {
-    tensionStatus = { label: "대안 수렴 및 절충", color: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" };
+    tensionStatus = { label: "CONVERGENCE", color: "text-lime-400" };
   }
 
-  // 💡 [핵심] 'ON'으로 켜진 조건만 쏙 골라서 AI에게 전달 (다 꺼져 있으면 깨끗한 안건만!)
   const getEnrichedAgenda = () => {
     const activeParams = paramsRef.current.filter((p) => p.enabled);
     if (activeParams.length === 0) return agenda;
@@ -239,7 +229,7 @@ export default function DebateRoomPro() {
       setSaveAlert(true);
       setTimeout(() => setSaveAlert(false), 3000);
     } catch (e) {
-      console.error("보관함 저장 오류:", e);
+      console.error(e);
     }
   };
 
@@ -278,7 +268,7 @@ export default function DebateRoomPro() {
         })
       });
 
-      if (!response.body) throw new Error("배관 연결 실패");
+      if (!response.body) throw new Error("Stream connection failed");
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -381,14 +371,14 @@ export default function DebateRoomPro() {
 
     const risksHtml = (summaryData.top_3_risks || []).map(r => `
       <li style="margin-bottom:8px;">
-        <span style="display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:700; background:#f0f0f2; color:#111;">${r.level}</span>
+        <span style="display:inline-block; padding:2px 8px; border-radius:2px; font-size:11px; font-weight:700; background:#f0f0f2; color:#111;">${r.level}</span>
         <b>${r.tag}</b>: ${r.desc}
       </li>
     `).join("");
 
     const matrixHtml = (summaryData.alignment_matrix || []).map(m => `
       <tr>
-        <td style="font-weight:700; color:#0071e3; width:22%;">${m.dept}</td>
+        <td style="font-weight:700; color:#111; width:22%;">${m.dept}</td>
         <td style="color:#555;">${m.issue}</td>
         <td style="font-weight:600; color:#111;">${m.resolution}</td>
       </tr>
@@ -397,8 +387,8 @@ export default function DebateRoomPro() {
     const actionsHtml = (summaryData.next_actions || []).map(a => `
       <tr>
         <td style="font-weight:600;">${a.action}</td>
-        <td style="text-align:center; color:#0071e3;">${a.owner}</td>
-        <td style="text-align:center; color:#ff9500; font-weight:700;">${a.due}</td>
+        <td style="text-align:center; color:#111;">${a.owner}</td>
+        <td style="text-align:center; color:#555; font-weight:700;">${a.due}</td>
       </tr>
     `).join("");
 
@@ -411,39 +401,36 @@ export default function DebateRoomPro() {
     @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
     * { font-family: "Pretendard", -apple-system, sans-serif !important; box-sizing: border-box; }
     body { margin: 0; padding: 30px 16px; background-color: #f5f5f7; color: #1d1d1f; }
-    .wrapper { max-width: 840px; margin: 0 auto; background: #ffffff; border-radius: 16px; padding: 28px 24px; border: 1px solid #e5e5ea; }
-    @media (min-width: 640px) { .wrapper { padding: 40px 48px; border-radius: 20px; } }
-    .header { border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px; }
-    @media (min-width: 500px) { .header { flex-direction: row; justify-content: space-between; align-items: flex-end; } }
-    .header-title { font-size: 22px; font-weight: 800; color: #111; margin: 0; }
-    .header-meta { font-size: 11px; color: #86868b; }
-    .section-title { font-size: 13px; font-weight: 700; color: #111; text-transform: uppercase; margin: 20px 0 8px 0; display: flex; align-items: center; gap: 6px; }
-    .section-title::before { content: ''; width: 4px; height: 13px; background: #0071e3; border-radius: 2px; }
-    .box-decision { background: #f0f7ff; border-left: 4px solid #0071e3; padding: 12px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600; color: #004085; line-height: 1.6; }
-    .box-gray { background: #f9f9fb; border: 1px solid #e5e5ea; border-radius: 8px; padding: 12px 16px; font-size: 13px; line-height: 1.6; }
+    .wrapper { max-width: 840px; margin: 0 auto; background: #ffffff; padding: 36px; border: 1px solid #d2d2d7; }
+    .header { border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .header-title { font-size: 22px; font-weight: 800; color: #111; margin: 0; letter-spacing: -0.02em; }
+    .header-meta { font-size: 11px; color: #86868b; font-family: monospace; }
+    .section-title { font-size: 12px; font-weight: 700; color: #111; text-transform: uppercase; margin: 20px 0 8px 0; letter-spacing: 0.1em; }
+    .box-decision { background: #fafafa; border-left: 3px solid #111; padding: 14px; font-size: 13.5px; font-weight: 600; color: #111; line-height: 1.6; }
+    .box-gray { background: #fafafa; border: 1px solid #e5e5ea; padding: 12px 16px; font-size: 13px; line-height: 1.6; }
     table { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 12px; }
-    th { background: #f5f5f7; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #d2d2d7; color: #666; }
+    th { background: #f5f5f7; padding: 8px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid #d2d2d7; color: #666; font-family: monospace; }
     td { padding: 8px 10px; border-bottom: 1px solid #eee; line-height: 1.45; }
-    .footer { text-align: center; font-size: 11px; color: #999; margin-top: 30px; padding-top: 14px; border-top: 1px solid #eee; }
+    .footer { text-align: center; font-size: 10px; color: #999; margin-top: 30px; padding-top: 14px; border-top: 1px solid #eee; font-family: monospace; }
   </style>
 </head>
 <body>
   <div class="wrapper">
     <div class="header">
       <div>
-        <div style="font-size: 11px; font-weight: 700; color: #0071e3; letter-spacing: 0.05em;">EXECUTIVE ONE-PAGER</div>
+        <div style="font-size: 10px; font-weight: 700; color: #111; letter-spacing: 0.2em; font-family: monospace;">EXHIBIT // MEMORANDUM</div>
         <h1 class="header-title">Executive Decision Report</h1>
       </div>
       <div class="header-meta">
-        Date: ${todayStr}<br>
-        Chair: 설비구매 그룹장 (Orchestrator)
+        DATE: ${todayStr}<br>
+        CHAIR: ORCHESTRATOR
       </div>
     </div>
 
     <div class="section-title">1. Agenda & Scenario Constraints</div>
     <div class="box-gray">
       <b>안건:</b> ${agenda}<br>
-      <span style="font-size: 11px; color: #0071e3; margin-top: 4px; display: inline-block;">
+      <span style="font-size: 11px; color: #555; margin-top: 4px; display: inline-block; font-family: monospace;">
         [정량 조건: ${paramSummaryText}]
       </span>
     </div>
@@ -471,7 +458,7 @@ export default function DebateRoomPro() {
     </table>
 
     <div class="footer">
-      Generated via Debate Room Pro · Cross-Functional Decision Simulator
+      COMPILED VIA DEBATE ROOM PRO · AVANT-GARDE SIMULATOR
     </div>
   </div>
 </body>
@@ -481,7 +468,7 @@ export default function DebateRoomPro() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `Executive_Report_${new Date().toISOString().slice(0, 10)}.html`;
+    link.download = `Report_${new Date().toISOString().slice(0, 10)}.html`;
     link.click();
     URL.revokeObjectURL(url);
   };
@@ -533,7 +520,7 @@ export default function DebateRoomPro() {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setTimeLeft(sessionMin * 60);
     setSummaryData(null);
-    setMessages([{ speaker: "👑 Orchestrator", speech: "회의가 초기화되었습니다. 안건을 준비해 주세요." }]);
+    setMessages([{ speaker: "👑 Orchestrator", speech: "세션이 초기화되었습니다. 안건을 준비해 주십시오." }]);
   };
 
   const mins = Math.floor(timeLeft / 60);
@@ -543,92 +530,94 @@ export default function DebateRoomPro() {
   return (
     <div className="min-h-screen bg-black text-zinc-100 flex flex-col p-3 sm:p-6 font-sans">
       
-      {/* 콜드스타트 안내 배너 */}
+      {/* 갤러리 경고 배너 */}
       {serverState === "waking" && (
-        <div className="max-w-7xl mx-auto w-full mb-3 p-2.5 sm:p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center justify-between gap-2 text-xs text-amber-300 animate-in fade-in">
+        <div className="max-w-7xl mx-auto w-full mb-3 p-2.5 bg-zinc-900 border-l-2 border-lime-400 flex items-center justify-between gap-2 text-xs font-mono text-zinc-300 animate-in fade-in">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>
-            <span>Render 무료 AI 서버를 수면에서 깨우는 중입니다 (최초 1회 약 20~30초 소요)...</span>
+            <span className="w-1.5 h-1.5 bg-lime-400 animate-ping"></span>
+            <span>[SYS NOTICE] AI SERVER COLD BOOT SEQUENCE RUNNING (EST. 20-30S)...</span>
           </div>
-          <span className="font-mono text-[10px] text-amber-400/70 hidden sm:inline">Connecting Backend</span>
+          <span className="text-[10px] text-zinc-500 hidden sm:inline">CONNECTING</span>
         </div>
       )}
 
-      {/* 1. 상단 슬림 헤더 */}
-      <header className="flex flex-wrap items-center justify-between gap-3 bg-zinc-900/80 border border-zinc-800 rounded-2xl sm:rounded-full px-4 sm:px-6 py-2.5 sm:py-3 mb-4 sm:mb-6 backdrop-blur-md shadow-lg">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span className="text-blue-500 font-bold text-base sm:text-lg">⌘</span>
-          <span className="font-bold tracking-tight text-white text-sm sm:text-base">Debate Room Pro</span>
-          
-          <span className={`text-[10px] sm:text-xs font-semibold px-2.5 py-0.5 rounded-full border ${
-            serverState === "ready"
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-              : serverState === "waking"
-              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
-              : "bg-zinc-800 text-zinc-400 border-zinc-700"
-          }`}>
-            ● {serverState === "ready" ? "Server Ready" : serverState === "waking" ? "Waking Up..." : "Checking..."}
+      {/* 1. 아방가르드 헤더 마스트헤드 */}
+      <header className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950 border-b border-zinc-800/80 px-4 sm:px-6 py-3.5 mb-4 sm:mb-6">
+        <div className="flex items-center gap-3">
+          <span className="text-lime-400 font-mono text-sm">✦</span>
+          <div className="flex flex-col">
+            <span className="font-mono text-xs sm:text-sm font-bold tracking-[0.25em] text-zinc-100 uppercase">
+              DEBATE ROOM // PRO
+            </span>
+            <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+              SPECIMEN NO. 2026 · CROSS-FUNCTIONAL
+            </span>
+          </div>
+
+          <span className="text-[9px] font-mono uppercase px-2 py-0.5 border border-zinc-800 text-zinc-400 ml-2">
+            {serverState === "ready" ? "SYS: ONLINE" : serverState === "waking" ? "SYS: BOOTING" : "SYS: CHECK"}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* 오디오 토글 */}
           <button
             onClick={() => {
               if (ttsEnabled && typeof window !== "undefined") window.speechSynthesis?.cancel();
               setTtsEnabled(!ttsEnabled);
             }}
-            className={`inline-flex items-center justify-center rounded-full text-[11px] sm:text-xs font-medium border px-3 py-1.5 transition-colors gap-1 cursor-pointer ${
-              ttsEnabled 
-                ? "bg-blue-600/20 border-blue-500 text-blue-300" 
-                : "border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-400"
+            className={`text-[10px] font-mono uppercase px-2.5 py-1 border transition-colors ${
+              ttsEnabled
+                ? "bg-zinc-100 text-black border-zinc-100 font-bold"
+                : "bg-black text-zinc-400 border-zinc-800 hover:border-zinc-600"
             }`}
           >
-            {ttsEnabled ? "🔊 음성 낭독 ON" : "🔇 음성 낭독 OFF"}
+            {ttsEnabled ? "AUDIO: ON" : "AUDIO: OFF"}
           </button>
 
           {saveAlert && (
-            <span className="text-[11px] sm:text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 sm:px-3 py-1 rounded-full animate-in fade-in">
-              ✓ 보관됨
+            <span className="text-[10px] font-mono text-lime-400 px-2 py-0.5 border border-lime-400/40 animate-in fade-in">
+              SAVED
             </span>
           )}
 
-          {/* 회의 보관함 모달 */}
+          {/* 보관함 모달 */}
           <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
-            <DialogTrigger className="inline-flex items-center justify-center rounded-full text-[11px] sm:text-xs font-medium border border-zinc-700 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 px-3 py-1.5 transition-colors gap-1 cursor-pointer">
-              🗄️ 보관함 ({archives.length})
+            <DialogTrigger className="text-[10px] font-mono uppercase px-2.5 py-1 border border-zinc-800 hover:border-zinc-500 text-zinc-300 transition-colors">
+              ARCHIVE ({archives.length})
             </DialogTrigger>
-            <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-xl max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-2xl p-4 sm:p-6">
+            <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-100 max-w-xl max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-none p-5">
               <DialogHeader>
-                <DialogTitle className="text-sm sm:text-base font-bold text-white flex items-center justify-between">
-                  <span>🗄️ 과거 회의 기록 보관함</span>
-                  <span className="text-xs font-normal text-zinc-400">총 {archives.length}건</span>
+                <DialogTitle className="text-xs font-mono tracking-widest uppercase text-zinc-300 pb-2 border-b border-zinc-800 flex justify-between items-center">
+                  <span>DISCOURSE ARCHIVE</span>
+                  <span className="text-zinc-500">[{archives.length} ITEMS]</span>
                 </DialogTitle>
               </DialogHeader>
 
               {archives.length === 0 ? (
-                <div className="py-10 text-center text-zinc-500 text-xs">
-                  보관된 회의 기록이 없습니다.
+                <div className="py-12 text-center text-zinc-600 font-mono text-xs">
+                  NO ARCHIVED DISCOURSES FOUND.
                 </div>
               ) : (
-                <div className="flex flex-col gap-2.5 pt-2">
+                <div className="flex flex-col gap-2 pt-2">
                   {archives.map((item) => (
                     <div
                       key={item.id}
                       onClick={() => loadArchive(item)}
-                      className="p-3.5 rounded-xl bg-zinc-900/70 border border-zinc-800 hover:border-blue-500/50 cursor-pointer transition-all flex flex-col gap-1.5"
+                      className="p-3 bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-500 cursor-pointer transition-all flex flex-col gap-1"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-mono text-blue-400">{item.savedAt}</span>
+                      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                        <span>{item.savedAt}</span>
                         <button
                           onClick={(e) => deleteArchive(item.id, e)}
-                          className="text-[11px] text-zinc-500 hover:text-rose-400 px-1.5 py-0.5 rounded"
+                          className="hover:text-rose-400"
                         >
-                          삭제
+                          [DELETE]
                         </button>
                       </div>
-                      <div className="text-xs font-bold text-zinc-100 line-clamp-1">{item.agenda}</div>
+                      <div className="text-xs font-mono font-medium text-zinc-200 line-clamp-1">{item.agenda}</div>
                       {item.summaryData?.bottom_line && (
-                        <div className="text-[11px] text-zinc-400 line-clamp-1 bg-zinc-950/70 p-2 rounded-lg border border-zinc-800/60">
+                        <div className="text-[11px] text-zinc-400 line-clamp-1 bg-black p-2 border-l border-zinc-700">
                           {item.summaryData.bottom_line}
                         </div>
                       )}
@@ -639,56 +628,58 @@ export default function DebateRoomPro() {
             </DialogContent>
           </Dialog>
 
-          {/* 환경설정 모달 */}
+          {/* 설정 모달 */}
           <Dialog>
-            <DialogTrigger className="inline-flex items-center justify-center rounded-full text-[11px] sm:text-xs font-medium border border-zinc-700 bg-transparent hover:bg-zinc-800 text-zinc-200 px-3 py-1.5 transition-colors gap-1 cursor-pointer">
-              ⚙️ 설정
+            <DialogTrigger className="text-[10px] font-mono uppercase px-2.5 py-1 border border-zinc-800 hover:border-zinc-500 text-zinc-300 transition-colors">
+              CONFIG
             </DialogTrigger>
-            <DialogContent className="bg-zinc-950 border-zinc-800 text-zinc-100 max-w-md max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-2xl p-4 sm:p-6">
+            <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-100 max-w-md max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-none p-5">
               <DialogHeader>
-                <DialogTitle className="text-sm sm:text-base font-bold text-white">⚙️ 회의실 환경설정</DialogTitle>
+                <DialogTitle className="text-xs font-mono tracking-widest uppercase text-zinc-300 pb-2 border-b border-zinc-800">
+                  SYSTEM PARAMETERS
+                </DialogTitle>
               </DialogHeader>
 
-              <div className="flex flex-col gap-3 pt-2 border-b border-zinc-800 pb-4">
-                <span className="text-xs font-semibold text-zinc-400 uppercase">1. AI 엔진</span>
+              <div className="flex flex-col gap-2 pt-2 border-b border-zinc-800 pb-4">
+                <span className="text-[10px] font-mono uppercase text-zinc-500">1. COGNITIVE ENGINE</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => { setEngine("groq"); setModel("openai/gpt-oss-120b"); }}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      engine === "groq" ? "bg-blue-600/15 border-blue-500 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                    className={`p-2 border text-left font-mono transition-all ${
+                      engine === "groq" ? "bg-zinc-100 text-black border-zinc-100" : "bg-black border-zinc-800 text-zinc-400"
                     }`}
                   >
-                    <div className="text-xs font-bold">⚡ Groq</div>
-                    <div className="text-[10px] text-zinc-500">gpt-oss-120b</div>
+                    <div className="text-xs font-bold">GROQ</div>
+                    <div className="text-[9px] opacity-70">gpt-oss-120b</div>
                   </button>
                   <button
                     onClick={() => { setEngine("gemini"); setModel("gemini-2.5-flash"); }}
-                    className={`p-2.5 rounded-xl border text-left transition-all ${
-                      engine === "gemini" ? "bg-blue-600/15 border-blue-500 text-white" : "bg-zinc-900 border-zinc-800 text-zinc-400"
+                    className={`p-2 border text-left font-mono transition-all ${
+                      engine === "gemini" ? "bg-zinc-100 text-black border-zinc-100" : "bg-black border-zinc-800 text-zinc-400"
                     }`}
                   >
-                    <div className="text-xs font-bold">✨ Gemini</div>
-                    <div className="text-[10px] text-zinc-500">gemini-2.5-flash</div>
+                    <div className="text-xs font-bold">GEMINI</div>
+                    <div className="text-[9px] opacity-70">gemini-2.5-flash</div>
                   </button>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-3 pt-2 border-b border-zinc-800 pb-4">
-                <span className="text-xs font-semibold text-zinc-400 uppercase">
-                  2. 참석 부서 ({activeDepts.length}/{departments.length})
+              <div className="flex flex-col gap-2 pt-2 border-b border-zinc-800 pb-4">
+                <span className="text-[10px] font-mono uppercase text-zinc-500">
+                  2. STAKEHOLDERS ({activeDepts.length}/{departments.length})
                 </span>
-                <div className="flex flex-col gap-2 max-h-40 overflow-y-auto pr-1">
+                <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1">
                   {departments.map((d) => (
                     <div
                       key={d.name}
                       onClick={() => toggleDept(d.name)}
-                      className={`flex items-center justify-between p-2 rounded-xl border cursor-pointer ${
-                        d.enabled ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-zinc-950 border-zinc-800/60 text-zinc-600 opacity-60"
+                      className={`flex items-center justify-between p-2 border cursor-pointer font-mono ${
+                        d.enabled ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-black border-zinc-900 text-zinc-600"
                       }`}
                     >
-                      <span className="text-xs font-semibold">{d.name}</span>
-                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${d.enabled ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-800 text-zinc-500"}`}>
-                        {d.enabled ? "참석" : "불참"}
+                      <span className="text-xs">{d.name}</span>
+                      <span className="text-[9px] uppercase">
+                        {d.enabled ? "[ACTIVE]" : "[MUTED]"}
                       </span>
                     </div>
                   ))}
@@ -696,24 +687,24 @@ export default function DebateRoomPro() {
               </div>
 
               <form onSubmit={handleAddDept} className="flex flex-col gap-2 pt-2">
-                <span className="text-xs font-semibold text-zinc-400 uppercase">+ 새 부서 추가</span>
+                <span className="text-[10px] font-mono uppercase text-zinc-500">+ REGISTER STAKEHOLDER</span>
                 <input
                   type="text"
-                  placeholder="부서명 (예: 🌿 EHS)"
+                  placeholder="DEPT (예: 🌿 EHS)"
                   value={newDeptName}
                   onChange={(e) => setNewDeptName(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200"
+                  className="bg-black border border-zinc-800 rounded-none px-2 py-1 text-xs text-zinc-200 font-mono"
                 />
                 <input
                   type="text"
-                  placeholder="주요 관심사/KPI"
+                  placeholder="KPI / ROLE FOCUS"
                   value={newDeptRole}
                   onChange={(e) => setNewDeptRole(e.target.value)}
-                  className="bg-zinc-900 border border-zinc-800 rounded-xl px-3 py-1.5 text-xs text-zinc-200"
+                  className="bg-black border border-zinc-800 rounded-none px-2 py-1 text-xs text-zinc-200 font-mono"
                 />
-                <Button type="submit" size="sm" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs rounded-xl mt-1">
-                  부서 등록
-                </Button>
+                <button type="submit" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-[10px] uppercase py-1.5 mt-1">
+                  ADD ENTITY
+                </button>
               </form>
             </DialogContent>
           </Dialog>
@@ -721,11 +712,11 @@ export default function DebateRoomPro() {
       </header>
 
       {/* 2. 메인 관제 뷰 */}
-      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto w-full">
+      <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto w-full">
         {/* 메인 회의 콘솔 */}
-        <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-4">
+        <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-3">
           
-          {/* 🧩 유연한 정량 조건 레고 블록 장착! */}
+          {/* 안건 및 정량 조건 카드 */}
           <ScenarioCard
             agenda={agenda}
             setAgenda={setAgenda}
@@ -738,27 +729,28 @@ export default function DebateRoomPro() {
             setParams={setParams}
           />
 
-          {/* 실시간 회의록 */}
-          <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-3.5 sm:p-5 overflow-y-auto max-h-[42vh] sm:max-h-[440px] flex flex-col gap-2.5 sm:gap-3 shadow-inner">
-            <div className="text-[10px] sm:text-xs font-semibold text-zinc-500 uppercase tracking-wider flex justify-between">
-              <span>Discussion Transcript (실시간 회의록)</span>
-              {isDebating && <span className="text-blue-400 animate-pulse font-mono">Auto Relay Active...</span>}
+          {/* 런웨이 대본 / 전시 도록 스타일 회의록 */}
+          <div className="bg-zinc-950 border border-zinc-800/80 p-4 sm:p-5 overflow-y-auto max-h-[46vh] sm:max-h-[480px] flex flex-col gap-3">
+            <div className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 uppercase flex justify-between border-b border-zinc-900 pb-2 mb-1">
+              <span>TRANSCRIPT // LIVE RECORD</span>
+              {isDebating && <span className="text-lime-400 font-mono">STREAMING IN PROGRESS</span>}
             </div>
+
             {messages.map((m, idx) => (
               <div
                 key={idx}
-                className={`p-3 sm:p-4 rounded-xl sm:rounded-2xl max-w-[95%] sm:max-w-[90%] border transition-all ${
+                className={`p-3.5 border transition-all ${
                   m.speaker.includes("Orchestrator")
-                    ? "ml-auto bg-gradient-to-br from-blue-600 to-blue-700 border-blue-500 text-white shadow-lg shadow-blue-500/20"
-                    : "bg-zinc-900/90 border-zinc-800/80 text-zinc-200"
+                    ? "bg-zinc-900/90 border-l-2 border-l-lime-400 border-zinc-800 text-zinc-100"
+                    : "bg-zinc-950/60 border-l-2 border-l-zinc-700 border-zinc-900 text-zinc-300"
                 }`}
               >
-                <div className="flex items-center justify-between gap-3 mb-1">
-                  <span className="text-xs font-bold tracking-wide text-zinc-200">{m.speaker}</span>
-                  <span className="text-[9px] sm:text-[10px] opacity-70">Turn #{idx + 1}</span>
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <span className="text-xs font-mono font-bold tracking-wider text-zinc-100">{m.speaker}</span>
+                  <span className="text-[9px] font-mono text-zinc-500">INDEX #{String(idx + 1).padStart(2, "0")}</span>
                 </div>
-                <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
-                  {m.speech || <span className="inline-block w-1.5 h-3.5 bg-blue-500 animate-pulse align-middle"></span>}
+                <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans text-zinc-200">
+                  {m.speech || <span className="inline-block w-2 h-3 bg-lime-400 animate-pulse"></span>}
                 </p>
               </div>
             ))}
@@ -766,71 +758,72 @@ export default function DebateRoomPro() {
           </div>
 
           {/* 조율자 지침 입력창 */}
-          <form onSubmit={handleSendOrchestrator} className="flex flex-col sm:flex-row gap-2 bg-zinc-900/90 border border-blue-500/30 rounded-2xl p-2 shadow-lg shadow-blue-900/10">
-            <div className="flex items-center gap-1.5 px-2">
-              <span className="text-xs font-bold text-blue-400 whitespace-nowrap">👑 조율자 지침</span>
+          <form onSubmit={handleSendOrchestrator} className="flex flex-col sm:flex-row gap-2 bg-zinc-950 border border-zinc-800 p-2">
+            <div className="flex items-center gap-1 px-2">
+              <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">👑 DIRECTIVE:</span>
             </div>
             <div className="flex-1 flex gap-2">
               <input
                 type="text"
                 value={orchestratorInput}
                 onChange={(e) => setOrchestratorInput(e.target.value)}
-                placeholder="지침 입력 (예: 4주 Buffer 확보 전제)..."
-                className="flex-1 bg-zinc-950/80 border border-zinc-800 rounded-xl px-3 py-2 text-xs text-zinc-100 placeholder-zinc-500 focus:outline-none focus:border-blue-500"
+                placeholder="INSERT INTERVENTION DIRECTIVE..."
+                className="flex-1 bg-black border border-zinc-800 rounded-none px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
               />
-              <Button type="submit" size="sm" className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs px-3 sm:px-4 shrink-0">
-                전송
-              </Button>
+              <button type="submit" className="bg-zinc-100 hover:bg-white text-black font-mono font-bold text-xs uppercase px-4 shrink-0 transition-colors">
+                SEND
+              </button>
             </div>
           </form>
 
-          {/* 로딩 인디케이터 */}
+          {/* 컴파일 로딩 */}
           {isSummarizing && (
-            <div className="p-4 sm:p-6 bg-zinc-900/50 border border-zinc-800 rounded-2xl text-center animate-pulse">
-              <span className="text-blue-400 text-xs sm:text-sm font-semibold">📋 CEO 직속 Executive Briefing 작성 중...</span>
+            <div className="p-4 bg-zinc-950 border border-zinc-800 text-center animate-pulse">
+              <span className="text-lime-400 font-mono text-xs uppercase tracking-widest">
+                COMPILING EXECUTIVE MEMORANDUM...
+              </span>
             </div>
           )}
 
           {/* Executive Summary 카드 */}
           {summaryData && (
-            <div className="flex flex-col gap-3 sm:gap-4 p-4 sm:p-6 bg-zinc-950 border border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl animate-in fade-in duration-300">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800/80 pb-3">
+            <div className="flex flex-col gap-3 p-4 sm:p-5 bg-zinc-950 border border-zinc-700 animate-in fade-in duration-300">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-blue-500 text-base sm:text-lg">📋</span>
-                  <span className="font-bold text-white text-sm sm:text-base">Executive Summary</span>
+                  <span className="text-lime-400 font-mono">✦</span>
+                  <span className="font-mono text-xs sm:text-sm font-bold tracking-widest uppercase text-zinc-100">
+                    EXECUTIVE MEMORANDUM
+                  </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <Button
+                  <button
                     onClick={() => saveToArchive(summaryData, messages)}
-                    size="sm"
-                    variant="outline"
-                    className="rounded-full border-zinc-700 hover:bg-zinc-800 text-[11px] sm:text-xs text-zinc-300 px-3 h-8"
+                    className="text-[10px] font-mono uppercase border border-zinc-700 hover:border-zinc-400 px-3 py-1 text-zinc-300 transition-colors"
                   >
-                    💾 보관함 저장
-                  </Button>
-                  <Button
+                    SAVE ARCHIVE
+                  </button>
+                  <button
                     onClick={handleDownloadHtmlReport}
-                    size="sm"
-                    className="rounded-full bg-blue-600 hover:bg-blue-500 text-[11px] sm:text-xs font-semibold px-3.5 h-8 shadow-md shadow-blue-600/30"
+                    className="text-[10px] font-mono uppercase bg-zinc-100 text-black font-bold px-3 py-1 hover:bg-white transition-colors"
                   >
-                    📥 보고서 (.html)
-                  </Button>
+                    EXPORT (.HTML)
+                  </button>
                 </div>
               </div>
 
               {/* Bottom Line */}
-              <div className="p-3 sm:p-4 bg-gradient-to-r from-blue-950/40 to-zinc-900/40 border border-blue-500/30 rounded-xl sm:rounded-2xl">
-                <div className="text-[10px] sm:text-[11px] font-bold text-blue-400 uppercase tracking-wider mb-1">Bottom Line (최종 권고)</div>
+              <div className="p-3.5 bg-zinc-900/80 border-l-2 border-lime-400">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-lime-400 mb-1">01. BOTTOM LINE ADVISORY</div>
                 <div className="text-xs sm:text-sm font-medium text-white leading-relaxed">{summaryData.bottom_line}</div>
               </div>
 
               {/* 리스크 & 매트릭스 그리드 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-xl flex flex-col gap-2">
-                  <div className="text-xs font-bold text-rose-400">⚠️ Top 3 Key Risks</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3 bg-black border border-zinc-800 flex flex-col gap-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-rose-400">02. TOP 3 RISKS</div>
                   {(summaryData.top_3_risks || []).map((r, i) => (
-                    <div key={i} className="text-[11px] sm:text-xs leading-relaxed">
-                      <span className="inline-block px-1.5 py-0.2 rounded text-[9px] font-bold mr-1 bg-rose-500/20 text-rose-400">
+                    <div key={i} className="text-[11px] leading-relaxed">
+                      <span className="font-mono text-[9px] px-1 py-0.2 mr-1 bg-rose-950/40 text-rose-300 border border-rose-900">
                         {r.level}
                       </span>
                       <strong className="text-zinc-200">{r.tag}:</strong> <span className="text-zinc-400">{r.desc}</span>
@@ -838,11 +831,11 @@ export default function DebateRoomPro() {
                   ))}
                 </div>
 
-                <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-xl flex flex-col gap-2">
-                  <div className="text-xs font-bold text-emerald-400">🤝 Alignment Matrix</div>
+                <div className="p-3 bg-black border border-zinc-800 flex flex-col gap-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-300">03. ALIGNMENT MATRIX</div>
                   {(summaryData.alignment_matrix || []).map((m, i) => (
-                    <div key={i} className="text-[11px] sm:text-xs leading-relaxed">
-                      <strong className="text-blue-400">[{m.dept}]</strong> <span className="text-zinc-400">{m.issue}</span> ➔ <strong className="text-emerald-400">{m.resolution}</strong>
+                    <div key={i} className="text-[11px] leading-relaxed">
+                      <strong className="text-zinc-200 font-mono">[{m.dept}]</strong> <span className="text-zinc-400">{m.issue}</span> ➔ <strong className="text-lime-400">{m.resolution}</strong>
                     </div>
                   ))}
                 </div>
@@ -850,12 +843,12 @@ export default function DebateRoomPro() {
 
               {/* Next Actions */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[11px] font-bold text-zinc-400 mr-1">Next Actions:</span>
+                <span className="text-[10px] font-mono uppercase text-zinc-500 mr-1">ACTION MANDATE:</span>
                 {(summaryData.next_actions || []).map((a, i) => (
-                  <div key={i} className="bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1 text-[11px] flex items-center gap-1.5">
+                  <div key={i} className="bg-black border border-zinc-800 px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
                     <span className="text-zinc-200">{a.action}</span>
-                    <span className="text-blue-400 font-semibold">{a.owner}</span>
-                    <span className="text-amber-400 font-mono text-[10px]">{a.due}</span>
+                    <span className="text-zinc-400 font-semibold">{a.owner}</span>
+                    <span className="text-lime-400">{a.due}</span>
                   </div>
                 ))}
               </div>
@@ -863,7 +856,7 @@ export default function DebateRoomPro() {
           )}
         </div>
 
-        {/* 🧩 세션 시계 / 합의 게이지 패널 */}
+        {/* 세션 시계 / 합의 게이지 패널 */}
         <div className="md:col-span-1 lg:col-span-1">
           <SessionPanel
             consensusRate={consensusRate}
