@@ -58,12 +58,12 @@ interface ArchiveItem {
   summaryData: SummaryData | null;
 }
 
-const DEFAULT_DEPARTMENTS: DepartmentInfo[] = [
-  { name: "💼 설비구매", role: "TCO 절감, 벤더 지체상금(LD) 조항 검토, 추가 항공운임 벤더 부담 관철", enabled: true, voicePitch: 0.95, voiceRate: 1.05 },
-  { name: "🏭 생산", role: "상업용 Batch 생산 마일스톤 준수, 라인 가동 중단 방지, OEE 극대화", enabled: true, voicePitch: 0.85, voiceRate: 1.15 },
-  { name: "🛡️ QA", role: "cGMP 및 규정 준수, Change Control 승인 절차, 입고 SAT 검증 강화", enabled: true, voicePitch: 1.15, voiceRate: 0.95 },
-  { name: "⚙️ 엔지니어링", role: "Utility(WFI, Clean Steam) 공급 용량 검토, Hook-up 공기 단축", enabled: true, voicePitch: 1.0, voiceRate: 1.05 },
-  { name: "🎯 프로젝트 PM", role: "전체 공정 마일스톤 준수, Critical Path 사수", enabled: true, voicePitch: 1.05, voiceRate: 1.1 },
+// 🎛️ 기본 프리셋 조건들 (기본 상태: 비활성화 OFF)
+const INITIAL_PARAMS: ScenarioParamItem[] = [
+  { id: "p1", label: "납기 지연", value: 8, unit: "주", step: 1, enabled: false },
+  { id: "p2", label: "공정 버퍼", value: 3, unit: "주", step: 1, enabled: false },
+  { id: "p3", label: "LD 상한", value: 5, unit: "%", step: 1, enabled: false },
+  { id: "p4", label: "대체단가 차이", value: 15, unit: "%", step: 5, enabled: false },
 ];
 
 // 🎛️ 기본 프리셋 조건들 (언제든 ON/OFF 및 삭제 가능)
