@@ -1,7 +1,5 @@
 "use client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://debate-room-backend.onrender.com";
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
