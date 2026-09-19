@@ -11,6 +11,7 @@ import {
 
 import { ScenarioCard, ScenarioParamItem } from "@/components/ui/debate/ScenarioCard";
 import { SessionPanel } from "@/components/ui/debate/SessionPanel";
+import { GuideModal } from "@/components/ui/debate/GuideModal";
 
 const API_BASE_URL = "https://debate-room-backend.onrender.com";
 
@@ -77,7 +78,7 @@ export default function DebateRoomPro() {
   const [messages, setMessages] = useState<Array<{ speaker: string; speech: string }>>([
     {
       speaker: "👑 Orchestrator",
-      speech: "안건이 상정되었습니다. 각 유관부서는 정량적 리스크와 상충되는 대안을 제시해 주십시오."
+      speech: "안건이 상정되었습니다. 유관부서 담당자분들은 핵심 리스크와 상충되는 대안을 제시해 주십시오."
     }
   ]);
 
@@ -193,11 +194,11 @@ export default function DebateRoomPro() {
   const turnCount = Math.max(0, messages.length - 1);
   const consensusRate = Math.min(95, Math.round(15 + Math.min(turnCount * 12, 70) + (orchestratorInput ? 8 : 0)));
   
-  let tensionStatus = { label: "EXPLORATION", color: "text-zinc-400" };
+  let tensionStatus = { label: "EXPLORATION", color: "text-stone-500" };
   if (turnCount >= 2 && turnCount <= 5) {
-    tensionStatus = { label: "CRITICAL COLLISION", color: "text-rose-400" };
+    tensionStatus = { label: "CRITICAL COLLISION", color: "text-stone-900" };
   } else if (turnCount > 5) {
-    tensionStatus = { label: "CONVERGENCE", color: "text-lime-400" };
+    tensionStatus = { label: "CONVERGENCE", color: "text-stone-900" };
   }
 
   const getEnrichedAgenda = () => {
@@ -528,38 +529,41 @@ export default function DebateRoomPro() {
   const progress = Math.min(100, Math.max(0, (timeLeft / (sessionMin * 60)) * 100));
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 flex flex-col p-3 sm:p-6 font-sans">
+    <div className="min-h-screen bg-[#ECECEB] text-stone-900 flex flex-col p-3 sm:p-6 font-sans antialiased">
       
-      {/* 갤러리 경고 배너 */}
+      {/* 부팅 배너 */}
       {serverState === "waking" && (
-        <div className="max-w-7xl mx-auto w-full mb-3 p-2.5 bg-zinc-900 border-l-2 border-lime-400 flex items-center justify-between gap-2 text-xs font-mono text-zinc-300 animate-in fade-in">
+        <div className="max-w-7xl mx-auto w-full mb-3 p-2.5 bg-stone-200 border-l-2 border-stone-900 flex items-center justify-between gap-2 text-xs font-mono text-stone-700 animate-in fade-in">
           <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 bg-lime-400 animate-ping"></span>
-            <span>[SYS NOTICE] AI SERVER COLD BOOT SEQUENCE RUNNING (EST. 20-30S)...</span>
+            <span className="w-1.5 h-1.5 bg-stone-900 animate-ping"></span>
+            <span>[SYSTEM] BACKEND SERVER INITIALIZING SEQUENCE RUNNING (EST. 20-30S)...</span>
           </div>
-          <span className="text-[10px] text-zinc-500 hidden sm:inline">CONNECTING</span>
+          <span className="text-[10px] text-stone-500 hidden sm:inline">CONNECTING</span>
         </div>
       )}
 
-      {/* 1. 아방가르드 헤더 마스트헤드 */}
-      <header className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950 border-b border-zinc-800/80 px-4 sm:px-6 py-3.5 mb-4 sm:mb-6">
+      {/* 1. 상단 갤러리 마스트헤드 */}
+      <header className="flex flex-wrap items-center justify-between gap-3 bg-white border border-stone-300/80 px-4 sm:px-6 py-3.5 mb-4 sm:mb-6 shadow-sm">
         <div className="flex items-center gap-3">
-          <span className="text-lime-400 font-mono text-sm">✦</span>
+          <span className="text-stone-900 font-mono text-sm">✦</span>
           <div className="flex flex-col">
-            <span className="font-mono text-xs sm:text-sm font-bold tracking-[0.25em] text-zinc-100 uppercase">
+            <span className="font-mono text-xs sm:text-sm font-bold tracking-[0.25em] text-stone-900 uppercase">
               DEBATE ROOM // PRO
             </span>
-            <span className="text-[9px] font-mono tracking-widest text-zinc-500 uppercase">
+            <span className="text-[9px] font-mono tracking-widest text-stone-500 uppercase">
               SPECIMEN NO. 2026 · CROSS-FUNCTIONAL
             </span>
           </div>
 
-          <span className="text-[9px] font-mono uppercase px-2 py-0.5 border border-zinc-800 text-zinc-400 ml-2">
+          <span className="text-[9px] font-mono uppercase px-2 py-0.5 border border-stone-200 bg-stone-50 text-stone-600 ml-2">
             {serverState === "ready" ? "SYS: ONLINE" : serverState === "waking" ? "SYS: BOOTING" : "SYS: CHECK"}
           </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* 📖 [신규] 사용 설명서 모달 버튼 (1장 요약 + 비디오) */}
+          <GuideModal />
+
           {/* 오디오 토글 */}
           <button
             onClick={() => {
@@ -568,34 +572,34 @@ export default function DebateRoomPro() {
             }}
             className={`text-[10px] font-mono uppercase px-2.5 py-1 border transition-colors ${
               ttsEnabled
-                ? "bg-zinc-100 text-black border-zinc-100 font-bold"
-                : "bg-black text-zinc-400 border-zinc-800 hover:border-zinc-600"
+                ? "bg-stone-900 text-white border-stone-900 font-bold"
+                : "bg-white text-stone-600 border-stone-300 hover:border-stone-600"
             }`}
           >
             {ttsEnabled ? "AUDIO: ON" : "AUDIO: OFF"}
           </button>
 
           {saveAlert && (
-            <span className="text-[10px] font-mono text-lime-400 px-2 py-0.5 border border-lime-400/40 animate-in fade-in">
+            <span className="text-[10px] font-mono text-stone-900 px-2 py-0.5 border border-stone-900 bg-stone-100 animate-in fade-in">
               SAVED
             </span>
           )}
 
           {/* 보관함 모달 */}
           <Dialog open={isArchiveOpen} onOpenChange={setIsArchiveOpen}>
-            <DialogTrigger className="text-[10px] font-mono uppercase px-2.5 py-1 border border-zinc-800 hover:border-zinc-500 text-zinc-300 transition-colors">
+            <DialogTrigger className="text-[10px] font-mono uppercase px-2.5 py-1 border border-stone-300 hover:border-stone-900 text-stone-700 transition-colors">
               ARCHIVE ({archives.length})
             </DialogTrigger>
-            <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-100 max-w-xl max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-none p-5">
+            <DialogContent className="bg-[#FAF9F6] border border-stone-300 text-stone-900 max-w-xl max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-none p-5">
               <DialogHeader>
-                <DialogTitle className="text-xs font-mono tracking-widest uppercase text-zinc-300 pb-2 border-b border-zinc-800 flex justify-between items-center">
+                <DialogTitle className="text-xs font-mono tracking-widest uppercase text-stone-900 pb-2 border-b border-stone-300 flex justify-between items-center">
                   <span>DISCOURSE ARCHIVE</span>
-                  <span className="text-zinc-500">[{archives.length} ITEMS]</span>
+                  <span className="text-stone-500">[{archives.length} ITEMS]</span>
                 </DialogTitle>
               </DialogHeader>
 
               {archives.length === 0 ? (
-                <div className="py-12 text-center text-zinc-600 font-mono text-xs">
+                <div className="py-12 text-center text-stone-400 font-mono text-xs">
                   NO ARCHIVED DISCOURSES FOUND.
                 </div>
               ) : (
@@ -604,20 +608,20 @@ export default function DebateRoomPro() {
                     <div
                       key={item.id}
                       onClick={() => loadArchive(item)}
-                      className="p-3 bg-zinc-900/40 border border-zinc-800/80 hover:border-zinc-500 cursor-pointer transition-all flex flex-col gap-1"
+                      className="p-3 bg-white border border-stone-200 hover:border-stone-900 cursor-pointer transition-all flex flex-col gap-1 shadow-sm"
                     >
-                      <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
+                      <div className="flex items-center justify-between text-[10px] font-mono text-stone-500">
                         <span>{item.savedAt}</span>
                         <button
                           onClick={(e) => deleteArchive(item.id, e)}
-                          className="hover:text-rose-400"
+                          className="hover:text-rose-600 font-bold"
                         >
                           [DELETE]
                         </button>
                       </div>
-                      <div className="text-xs font-mono font-medium text-zinc-200 line-clamp-1">{item.agenda}</div>
+                      <div className="text-xs font-sans font-bold text-stone-900 line-clamp-1">{item.agenda}</div>
                       {item.summaryData?.bottom_line && (
-                        <div className="text-[11px] text-zinc-400 line-clamp-1 bg-black p-2 border-l border-zinc-700">
+                        <div className="text-[11px] text-stone-600 line-clamp-1 bg-stone-50 p-2 border-l-2 border-stone-400">
                           {item.summaryData.bottom_line}
                         </div>
                       )}
@@ -630,23 +634,23 @@ export default function DebateRoomPro() {
 
           {/* 설정 모달 */}
           <Dialog>
-            <DialogTrigger className="text-[10px] font-mono uppercase px-2.5 py-1 border border-zinc-800 hover:border-zinc-500 text-zinc-300 transition-colors">
+            <DialogTrigger className="text-[10px] font-mono uppercase px-2.5 py-1 border border-stone-300 hover:border-stone-900 text-stone-700 transition-colors">
               CONFIG
             </DialogTrigger>
-            <DialogContent className="bg-zinc-950 border border-zinc-800 text-zinc-100 max-w-md max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-none p-5">
+            <DialogContent className="bg-[#FAF9F6] border border-stone-300 text-stone-900 max-w-md max-h-[85vh] overflow-y-auto w-[92vw] sm:w-full rounded-none p-5">
               <DialogHeader>
-                <DialogTitle className="text-xs font-mono tracking-widest uppercase text-zinc-300 pb-2 border-b border-zinc-800">
+                <DialogTitle className="text-xs font-mono tracking-widest uppercase text-stone-900 pb-2 border-b border-stone-300">
                   SYSTEM PARAMETERS
                 </DialogTitle>
               </DialogHeader>
 
-              <div className="flex flex-col gap-2 pt-2 border-b border-zinc-800 pb-4">
-                <span className="text-[10px] font-mono uppercase text-zinc-500">1. COGNITIVE ENGINE</span>
+              <div className="flex flex-col gap-2 pt-2 border-b border-stone-200 pb-4">
+                <span className="text-[10px] font-mono uppercase text-stone-500">1. COGNITIVE ENGINE</span>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => { setEngine("groq"); setModel("openai/gpt-oss-120b"); }}
                     className={`p-2 border text-left font-mono transition-all ${
-                      engine === "groq" ? "bg-zinc-100 text-black border-zinc-100" : "bg-black border-zinc-800 text-zinc-400"
+                      engine === "groq" ? "bg-stone-900 text-white border-stone-900" : "bg-white border-stone-300 text-stone-600"
                     }`}
                   >
                     <div className="text-xs font-bold">GROQ</div>
@@ -655,7 +659,7 @@ export default function DebateRoomPro() {
                   <button
                     onClick={() => { setEngine("gemini"); setModel("gemini-2.5-flash"); }}
                     className={`p-2 border text-left font-mono transition-all ${
-                      engine === "gemini" ? "bg-zinc-100 text-black border-zinc-100" : "bg-black border-zinc-800 text-zinc-400"
+                      engine === "gemini" ? "bg-stone-900 text-white border-stone-900" : "bg-white border-stone-300 text-stone-600"
                     }`}
                   >
                     <div className="text-xs font-bold">GEMINI</div>
@@ -664,8 +668,8 @@ export default function DebateRoomPro() {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-2 pt-2 border-b border-zinc-800 pb-4">
-                <span className="text-[10px] font-mono uppercase text-zinc-500">
+              <div className="flex flex-col gap-2 pt-2 border-b border-stone-200 pb-4">
+                <span className="text-[10px] font-mono uppercase text-stone-500">
                   2. STAKEHOLDERS ({activeDepts.length}/{departments.length})
                 </span>
                 <div className="flex flex-col gap-1 max-h-40 overflow-y-auto pr-1">
@@ -674,11 +678,11 @@ export default function DebateRoomPro() {
                       key={d.name}
                       onClick={() => toggleDept(d.name)}
                       className={`flex items-center justify-between p-2 border cursor-pointer font-mono ${
-                        d.enabled ? "bg-zinc-900 border-zinc-700 text-zinc-100" : "bg-black border-zinc-900 text-zinc-600"
+                        d.enabled ? "bg-white border-stone-400 text-stone-900" : "bg-stone-100 border-stone-200 text-stone-400"
                       }`}
                     >
                       <span className="text-xs">{d.name}</span>
-                      <span className="text-[9px] uppercase">
+                      <span className="text-[9px] uppercase font-bold">
                         {d.enabled ? "[ACTIVE]" : "[MUTED]"}
                       </span>
                     </div>
@@ -687,22 +691,22 @@ export default function DebateRoomPro() {
               </div>
 
               <form onSubmit={handleAddDept} className="flex flex-col gap-2 pt-2">
-                <span className="text-[10px] font-mono uppercase text-zinc-500">+ REGISTER STAKEHOLDER</span>
+                <span className="text-[10px] font-mono uppercase text-stone-500">+ REGISTER STAKEHOLDER</span>
                 <input
                   type="text"
-                  placeholder="DEPT (예: 🌿 EHS)"
+                  placeholder="부서명 (예: 🌿 EHS)"
                   value={newDeptName}
                   onChange={(e) => setNewDeptName(e.target.value)}
-                  className="bg-black border border-zinc-800 rounded-none px-2 py-1 text-xs text-zinc-200 font-mono"
+                  className="bg-white border border-stone-300 rounded-none px-2 py-1 text-xs text-stone-900 font-mono"
                 />
                 <input
                   type="text"
-                  placeholder="KPI / ROLE FOCUS"
+                  placeholder="KPI / 주요 관심사"
                   value={newDeptRole}
                   onChange={(e) => setNewDeptRole(e.target.value)}
-                  className="bg-black border border-zinc-800 rounded-none px-2 py-1 text-xs text-zinc-200 font-mono"
+                  className="bg-white border border-stone-300 rounded-none px-2 py-1 text-xs text-stone-900 font-mono"
                 />
-                <button type="submit" className="bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-[10px] uppercase py-1.5 mt-1">
+                <button type="submit" className="bg-stone-900 hover:bg-black text-white font-mono text-[10px] uppercase py-1.5 mt-1">
                   ADD ENTITY
                 </button>
               </form>
@@ -711,7 +715,7 @@ export default function DebateRoomPro() {
         </div>
       </header>
 
-      {/* 2. 메인 관제 뷰 */}
+      {/* 2. 메인 갤러리 관제 뷰 */}
       <div className="flex-1 grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 max-w-7xl mx-auto w-full">
         {/* 메인 회의 콘솔 */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-3">
@@ -729,28 +733,28 @@ export default function DebateRoomPro() {
             setParams={setParams}
           />
 
-          {/* 런웨이 대본 / 전시 도록 스타일 회의록 */}
-          <div className="bg-zinc-950 border border-zinc-800/80 p-4 sm:p-5 overflow-y-auto max-h-[46vh] sm:max-h-[480px] flex flex-col gap-3">
-            <div className="text-[9px] font-mono tracking-[0.2em] text-zinc-500 uppercase flex justify-between border-b border-zinc-900 pb-2 mb-1">
+          {/* 전시 도록 스타일 회의록 */}
+          <div className="bg-white border border-stone-300/80 p-4 sm:p-6 overflow-y-auto max-h-[46vh] sm:max-h-[480px] flex flex-col gap-3 shadow-sm">
+            <div className="text-[9px] font-mono tracking-[0.2em] text-stone-500 uppercase flex justify-between border-b border-stone-200 pb-2 mb-1">
               <span>TRANSCRIPT // LIVE RECORD</span>
-              {isDebating && <span className="text-lime-400 font-mono">STREAMING IN PROGRESS</span>}
+              {isDebating && <span className="text-stone-900 font-bold">STREAMING IN PROGRESS</span>}
             </div>
 
             {messages.map((m, idx) => (
               <div
                 key={idx}
-                className={`p-3.5 border transition-all ${
+                className={`p-4 border transition-all ${
                   m.speaker.includes("Orchestrator")
-                    ? "bg-zinc-900/90 border-l-2 border-l-lime-400 border-zinc-800 text-zinc-100"
-                    : "bg-zinc-950/60 border-l-2 border-l-zinc-700 border-zinc-900 text-zinc-300"
+                    ? "bg-stone-100/80 border-l-2 border-l-stone-900 border-stone-300 text-stone-900 shadow-sm"
+                    : "bg-white border-l-2 border-l-stone-400 border-stone-200 text-stone-800"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-xs font-mono font-bold tracking-wider text-zinc-100">{m.speaker}</span>
-                  <span className="text-[9px] font-mono text-zinc-500">INDEX #{String(idx + 1).padStart(2, "0")}</span>
+                  <span className="text-xs font-mono font-bold tracking-wider text-stone-900">{m.speaker}</span>
+                  <span className="text-[9px] font-mono text-stone-400">INDEX #{String(idx + 1).padStart(2, "0")}</span>
                 </div>
-                <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-sans text-zinc-200">
-                  {m.speech || <span className="inline-block w-2 h-3 bg-lime-400 animate-pulse"></span>}
+                <p className="text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap font-sans text-stone-800">
+                  {m.speech || <span className="inline-block w-2 h-3 bg-stone-900 animate-pulse"></span>}
                 </p>
               </div>
             ))}
@@ -758,19 +762,19 @@ export default function DebateRoomPro() {
           </div>
 
           {/* 조율자 지침 입력창 */}
-          <form onSubmit={handleSendOrchestrator} className="flex flex-col sm:flex-row gap-2 bg-zinc-950 border border-zinc-800 p-2">
+          <form onSubmit={handleSendOrchestrator} className="flex flex-col sm:flex-row gap-2 bg-white border border-stone-300 p-2 shadow-sm">
             <div className="flex items-center gap-1 px-2">
-              <span className="text-[10px] font-mono uppercase tracking-widest text-lime-400">👑 DIRECTIVE:</span>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-stone-900 font-bold">👑 DIRECTIVE:</span>
             </div>
             <div className="flex-1 flex gap-2">
               <input
                 type="text"
                 value={orchestratorInput}
                 onChange={(e) => setOrchestratorInput(e.target.value)}
-                placeholder="INSERT INTERVENTION DIRECTIVE..."
-                className="flex-1 bg-black border border-zinc-800 rounded-none px-3 py-2 text-xs text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-zinc-500 font-mono"
+                placeholder="조율자 개입 지침을 입력하십시오 (예: 4주 Buffer 확보 전제)..."
+                className="flex-1 bg-stone-50 border border-stone-300 rounded-none px-3 py-2 text-xs text-stone-900 placeholder-stone-400 focus:outline-none focus:border-stone-900 font-sans"
               />
-              <button type="submit" className="bg-zinc-100 hover:bg-white text-black font-mono font-bold text-xs uppercase px-4 shrink-0 transition-colors">
+              <button type="submit" className="bg-stone-900 hover:bg-black text-white font-mono font-bold text-xs uppercase px-4 shrink-0 transition-colors">
                 SEND
               </button>
             </div>
@@ -778,8 +782,8 @@ export default function DebateRoomPro() {
 
           {/* 컴파일 로딩 */}
           {isSummarizing && (
-            <div className="p-4 bg-zinc-950 border border-zinc-800 text-center animate-pulse">
-              <span className="text-lime-400 font-mono text-xs uppercase tracking-widest">
+            <div className="p-4 bg-white border border-stone-300 text-center animate-pulse">
+              <span className="text-stone-900 font-mono text-xs uppercase tracking-widest font-bold">
                 COMPILING EXECUTIVE MEMORANDUM...
               </span>
             </div>
@@ -787,24 +791,24 @@ export default function DebateRoomPro() {
 
           {/* Executive Summary 카드 */}
           {summaryData && (
-            <div className="flex flex-col gap-3 p-4 sm:p-5 bg-zinc-950 border border-zinc-700 animate-in fade-in duration-300">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
+            <div className="flex flex-col gap-3.5 p-5 sm:p-6 bg-white border border-stone-400 shadow-md animate-in fade-in duration-300">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
                 <div className="flex items-center gap-2">
-                  <span className="text-lime-400 font-mono">✦</span>
-                  <span className="font-mono text-xs sm:text-sm font-bold tracking-widest uppercase text-zinc-100">
+                  <span className="text-stone-900 font-mono">✦</span>
+                  <span className="font-mono text-xs sm:text-sm font-bold tracking-widest uppercase text-stone-900">
                     EXECUTIVE MEMORANDUM
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={() => saveToArchive(summaryData, messages)}
-                    className="text-[10px] font-mono uppercase border border-zinc-700 hover:border-zinc-400 px-3 py-1 text-zinc-300 transition-colors"
+                    className="text-[10px] font-mono uppercase border border-stone-300 hover:border-stone-900 px-3 py-1 text-stone-700 transition-colors"
                   >
                     SAVE ARCHIVE
                   </button>
                   <button
                     onClick={handleDownloadHtmlReport}
-                    className="text-[10px] font-mono uppercase bg-zinc-100 text-black font-bold px-3 py-1 hover:bg-white transition-colors"
+                    className="text-[10px] font-mono uppercase bg-stone-900 text-white font-bold px-3 py-1 hover:bg-black transition-colors"
                   >
                     EXPORT (.HTML)
                   </button>
@@ -812,30 +816,30 @@ export default function DebateRoomPro() {
               </div>
 
               {/* Bottom Line */}
-              <div className="p-3.5 bg-zinc-900/80 border-l-2 border-lime-400">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-lime-400 mb-1">01. BOTTOM LINE ADVISORY</div>
-                <div className="text-xs sm:text-sm font-medium text-white leading-relaxed">{summaryData.bottom_line}</div>
+              <div className="p-4 bg-stone-100 border-l-2 border-stone-900">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-stone-600 font-bold mb-1">01. BOTTOM LINE ADVISORY</div>
+                <div className="text-xs sm:text-sm font-semibold text-stone-900 leading-relaxed">{summaryData.bottom_line}</div>
               </div>
 
               {/* 리스크 & 매트릭스 그리드 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3 bg-black border border-zinc-800 flex flex-col gap-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-rose-400">02. TOP 3 RISKS</div>
+                <div className="p-3.5 bg-stone-50 border border-stone-200 flex flex-col gap-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-stone-900 font-bold">02. TOP 3 RISKS</div>
                   {(summaryData.top_3_risks || []).map((r, i) => (
-                    <div key={i} className="text-[11px] leading-relaxed">
-                      <span className="font-mono text-[9px] px-1 py-0.2 mr-1 bg-rose-950/40 text-rose-300 border border-rose-900">
+                    <div key={i} className="text-[11px] leading-relaxed text-stone-800">
+                      <span className="font-mono text-[9px] px-1 py-0.2 mr-1 bg-stone-200 text-stone-800 font-bold border border-stone-300">
                         {r.level}
                       </span>
-                      <strong className="text-zinc-200">{r.tag}:</strong> <span className="text-zinc-400">{r.desc}</span>
+                      <strong className="text-stone-900">{r.tag}:</strong> <span className="text-stone-600">{r.desc}</span>
                     </div>
                   ))}
                 </div>
 
-                <div className="p-3 bg-black border border-zinc-800 flex flex-col gap-2">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-300">03. ALIGNMENT MATRIX</div>
+                <div className="p-3.5 bg-stone-50 border border-stone-200 flex flex-col gap-2">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-stone-900 font-bold">03. ALIGNMENT MATRIX</div>
                   {(summaryData.alignment_matrix || []).map((m, i) => (
-                    <div key={i} className="text-[11px] leading-relaxed">
-                      <strong className="text-zinc-200 font-mono">[{m.dept}]</strong> <span className="text-zinc-400">{m.issue}</span> ➔ <strong className="text-lime-400">{m.resolution}</strong>
+                    <div key={i} className="text-[11px] leading-relaxed text-stone-800">
+                      <strong className="text-stone-900 font-mono">[{m.dept}]</strong> <span className="text-stone-600">{m.issue}</span> ➔ <strong className="text-stone-900">{m.resolution}</strong>
                     </div>
                   ))}
                 </div>
@@ -843,12 +847,12 @@ export default function DebateRoomPro() {
 
               {/* Next Actions */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                <span className="text-[10px] font-mono uppercase text-zinc-500 mr-1">ACTION MANDATE:</span>
+                <span className="text-[10px] font-mono uppercase text-stone-500 font-bold mr-1">ACTION MANDATE:</span>
                 {(summaryData.next_actions || []).map((a, i) => (
-                  <div key={i} className="bg-black border border-zinc-800 px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
-                    <span className="text-zinc-200">{a.action}</span>
-                    <span className="text-zinc-400 font-semibold">{a.owner}</span>
-                    <span className="text-lime-400">{a.due}</span>
+                  <div key={i} className="bg-stone-100 border border-stone-300 px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
+                    <span className="text-stone-800 font-medium">{a.action}</span>
+                    <span className="text-stone-500 font-semibold">{a.owner}</span>
+                    <span className="text-stone-900 font-bold">{a.due}</span>
                   </div>
                 ))}
               </div>
