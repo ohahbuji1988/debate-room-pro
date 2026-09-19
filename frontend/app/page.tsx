@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/dialog";
 
 // 🧩 우리가 1, 2단계에서 만든 전용 레고 블록 2개 불러오기!
-import { ScenarioCard, ScenarioParams } from "@/components/debate/ScenarioCard";
-import { SessionPanel } from "@/components/debate/SessionPanel";
+// ✅ 이렇게 'ui/' 를 쏙 넣어주세요!
+import { ScenarioCard, ScenarioParams } from "@/components/ui/debate/ScenarioCard";
+import { SessionPanel } from "@/components/ui/debate/SessionPanel";
 
 // 🌐 인터넷에 배포된 Render 백엔드 주소
 const API_BASE_URL = "https://debate-room-backend.onrender.com";
