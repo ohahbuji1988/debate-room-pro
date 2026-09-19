@@ -54,14 +54,10 @@ export function GuideModal() {
 
   return (
     <Dialog>
-      <DialogTrigger asChild>
-        <button
-          type="button"
-          className="text-[10px] font-mono uppercase px-3 py-1 bg-stone-900 text-stone-100 hover:bg-black transition-colors border border-stone-900 flex items-center gap-1.5"
-        >
-          <span>📖</span>
-          <span>GUIDE // MANUAL</span>
-        </button>
+      {/* ✅ asChild 에러 해결: DialogTrigger 자체를 버튼으로 깔끔하게 지정 */}
+      <DialogTrigger className="text-[10px] font-mono uppercase px-3 py-1 bg-stone-900 text-stone-100 hover:bg-black transition-colors border border-stone-900 flex items-center gap-1.5 cursor-pointer">
+        <span>📖</span>
+        <span>GUIDE // MANUAL</span>
       </DialogTrigger>
 
       <DialogContent className="bg-[#FAF9F6] border border-stone-300 text-stone-900 max-w-3xl max-h-[90vh] overflow-y-auto w-[94vw] sm:w-full rounded-none p-5 sm:p-7 shadow-2xl">
@@ -104,7 +100,6 @@ export function GuideModal() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              {/* Step 1 */}
               <div className="p-3.5 bg-white border border-stone-200 shadow-sm flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono text-stone-500 uppercase">PHASE 01</span>
@@ -116,7 +111,6 @@ export function GuideModal() {
                 </p>
               </div>
 
-              {/* Step 2 */}
               <div className="p-3.5 bg-white border border-stone-200 shadow-sm flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono text-stone-500 uppercase">PHASE 02</span>
@@ -124,11 +118,10 @@ export function GuideModal() {
                 </div>
                 <h4 className="font-bold text-stone-900 text-sm">참여 부서 & AI 엔진 선택</h4>
                 <p className="text-[11px] text-stone-600 leading-relaxed">
-                  설비구매, 생산, QA, 엔지니어링, PM 중 참석 부서를 정합니다. 상단 <b>[⚙️ 설정]</b>에서 새 부서를 추가하거나 Groq/Gemini 엔진을 바꿉니다.
+                  설비구매, 생산, QA, 엔지니어링, PM 중 참석 부서를 정합니다. 상단 <b>[CONFIG]</b>에서 새 부서를 추가하거나 Groq/Gemini 엔진을 바꿉니다.
                 </p>
               </div>
 
-              {/* Step 3 */}
               <div className="p-3.5 bg-white border border-stone-200 shadow-sm flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono text-stone-500 uppercase">PHASE 03</span>
@@ -136,11 +129,10 @@ export function GuideModal() {
                 </div>
                 <h4 className="font-bold text-stone-900 text-sm">핑퐁 토론 & 조율자 지침</h4>
                 <p className="text-[11px] text-stone-600 leading-relaxed">
-                  <b>[▶ 토론 시작]</b>을 누르면 부서별 실시간 발언이 흐릅니다. 토론 도중 하단 <b>👑 조율자 지침</b>을 입력해 회의 방향을 강제로 틀 수 있습니다.
+                  <b>[▶ 토론 시작]</b>을 누르면 부서별 실시간 발언이 흐릅니다. 토론 도중 하단 <b>👑 DIRECTIVE</b>를 입력해 회의 방향을 강제로 틀 수 있습니다.
                 </p>
               </div>
 
-              {/* Step 4 */}
               <div className="p-3.5 bg-white border border-stone-200 shadow-sm flex flex-col gap-1.5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono text-stone-500 uppercase">PHASE 04</span>
@@ -148,7 +140,7 @@ export function GuideModal() {
                 </div>
                 <h4 className="font-bold text-stone-900 text-sm">Executive 보고서 출력</h4>
                 <p className="text-[11px] text-stone-600 leading-relaxed">
-                  토론이 끝나면 핵심 결론(Bottom Line), Top 3 리스크, 부서별 절충안이 자동 정리됩니다. <b>[EXPORT .HTML]</b>로 보고서 파일을 다운로드하세요.
+                  토론이 끝나면 핵심 결론(Bottom Line), Top 3 리스크, 부서별 절충안이 자동 정리됩니다. <b>[EXPORT (.HTML)]</b>로 보고서 파일을 다운로드하세요.
                 </p>
               </div>
             </div>
@@ -162,9 +154,7 @@ export function GuideModal() {
         {/* 2. 30초 인터랙티브 비디오 시뮬레이터 */}
         {activeTab === "video" && (
           <div className="flex flex-col gap-3 font-sans text-stone-800 animate-in fade-in">
-            {/* 가상 비디오 모니터 */}
             <div className="bg-stone-950 text-stone-100 p-5 border border-stone-800 flex flex-col justify-between min-h-[260px] relative overflow-hidden">
-              {/* 상단 타임코드 */}
               <div className="flex items-center justify-between text-[10px] font-mono text-stone-400 border-b border-stone-800 pb-2">
                 <span className="flex items-center gap-1.5">
                   <span className={`w-2 h-2 rounded-full ${isPlaying ? "bg-rose-500 animate-pulse" : "bg-stone-600"}`}></span>
@@ -173,7 +163,6 @@ export function GuideModal() {
                 <span>SCENE [0{videoStep + 1} / 04]</span>
               </div>
 
-              {/* 중앙 씬 디스플레이 */}
               <div className="my-4 p-4 bg-stone-900/90 border border-stone-700/80">
                 <div className="text-[10px] font-mono text-lime-400 mb-1">
                   {videoScenes[videoStep].badge}
@@ -189,7 +178,6 @@ export function GuideModal() {
                 </div>
               </div>
 
-              {/* 하단 재생 컨트롤 바 */}
               <div className="flex items-center justify-between pt-2 border-t border-stone-800">
                 <button
                   type="button"

@@ -543,15 +543,15 @@ export default function DebateRoomPro() {
       )}
 
       {/* 1. 상단 갤러리 마스트헤드 */}
-      <header className="flex flex-wrap items-center justify-between gap-3 bg-white border border-stone-300/80 px-4 sm:px-6 py-3.5 mb-4 sm:mb-6 shadow-sm">
+      <header className="flex flex-wrap items-center justify-between gap-3 bg-white border border-stone-300/80 px-5 sm:px-7 py-4 mb-4 sm:mb-6 shadow-[0_2px_10px_-3px_rgba(0,0,0,0.03)]">
         <div className="flex items-center gap-3">
           <span className="text-stone-900 font-mono text-sm">✦</span>
           <div className="flex flex-col">
             <span className="font-mono text-xs sm:text-sm font-bold tracking-[0.25em] text-stone-900 uppercase">
               DEBATE ROOM // PRO
             </span>
-            <span className="text-[9px] font-mono tracking-widest text-stone-500 uppercase">
-              SPECIMEN NO. 2026 · CROSS-FUNCTIONAL
+            <span className="text-[9px] font-mono tracking-widest text-stone-400 uppercase">
+              SPECIMEN NO. 2026 · CROSS-FUNCTIONAL DISCOURSE
             </span>
           </div>
 
@@ -561,10 +561,8 @@ export default function DebateRoomPro() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* 📖 [신규] 사용 설명서 모달 버튼 (1장 요약 + 비디오) */}
           <GuideModal />
 
-          {/* 오디오 토글 */}
           <button
             onClick={() => {
               if (ttsEnabled && typeof window !== "undefined") window.speechSynthesis?.cancel();
@@ -720,7 +718,6 @@ export default function DebateRoomPro() {
         {/* 메인 회의 콘솔 */}
         <div className="md:col-span-2 lg:col-span-3 flex flex-col gap-3">
           
-          {/* 안건 및 정량 조건 카드 */}
           <ScenarioCard
             agenda={agenda}
             setAgenda={setAgenda}
@@ -733,27 +730,27 @@ export default function DebateRoomPro() {
             setParams={setParams}
           />
 
-          {/* 전시 도록 스타일 회의록 */}
-          <div className="bg-white border border-stone-300/80 p-4 sm:p-6 overflow-y-auto max-h-[46vh] sm:max-h-[480px] flex flex-col gap-3 shadow-sm">
-            <div className="text-[9px] font-mono tracking-[0.2em] text-stone-500 uppercase flex justify-between border-b border-stone-200 pb-2 mb-1">
-              <span>TRANSCRIPT // LIVE RECORD</span>
-              {isDebating && <span className="text-stone-900 font-bold">STREAMING IN PROGRESS</span>}
+          {/* 에디토리얼 인터뷰 룩 회의록 (Transcript) */}
+          <div className="bg-white border border-stone-300/80 p-5 sm:p-7 overflow-y-auto max-h-[46vh] sm:max-h-[480px] flex flex-col gap-3.5 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.03)]">
+            <div className="text-[9px] font-mono tracking-[0.25em] text-stone-400 uppercase flex justify-between border-b border-stone-200/80 pb-2 mb-1">
+              <span>RECORD // LIVE TRANSCRIPTION</span>
+              {isDebating && <span className="text-stone-900 font-bold">DISCOURSE IN PROGRESS</span>}
             </div>
 
             {messages.map((m, idx) => (
               <div
                 key={idx}
-                className={`p-4 border transition-all ${
+                className={`py-3 px-4 transition-all ${
                   m.speaker.includes("Orchestrator")
-                    ? "bg-stone-100/80 border-l-2 border-l-stone-900 border-stone-300 text-stone-900 shadow-sm"
-                    : "bg-white border-l-2 border-l-stone-400 border-stone-200 text-stone-800"
+                    ? "bg-[#FAF9F6] border-l-2 border-l-stone-900 text-stone-900"
+                    : "border-l-2 border-l-stone-300 bg-transparent text-stone-800"
                 }`}
               >
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <span className="text-xs font-mono font-bold tracking-wider text-stone-900">{m.speaker}</span>
-                  <span className="text-[9px] font-mono text-stone-400">INDEX #{String(idx + 1).padStart(2, "0")}</span>
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <span className="text-xs font-mono font-bold tracking-wide text-stone-900">{m.speaker}</span>
+                  <span className="text-[9px] font-mono text-stone-400">ENTRY #{String(idx + 1).padStart(2, "0")}</span>
                 </div>
-                <p className="text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap font-sans text-stone-800">
+                <p className="text-xs sm:text-[13px] leading-relaxed whitespace-pre-wrap font-sans text-stone-800 tracking-tight">
                   {m.speech || <span className="inline-block w-2 h-3 bg-stone-900 animate-pulse"></span>}
                 </p>
               </div>
@@ -791,7 +788,7 @@ export default function DebateRoomPro() {
 
           {/* Executive Summary 카드 */}
           {summaryData && (
-            <div className="flex flex-col gap-3.5 p-5 sm:p-6 bg-white border border-stone-400 shadow-md animate-in fade-in duration-300">
+            <div className="flex flex-col gap-3.5 p-5 sm:p-7 bg-white border border-stone-400 shadow-md animate-in fade-in duration-300">
               <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-200 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-stone-900 font-mono">✦</span>
@@ -816,14 +813,14 @@ export default function DebateRoomPro() {
               </div>
 
               {/* Bottom Line */}
-              <div className="p-4 bg-stone-100 border-l-2 border-stone-900">
-                <div className="text-[9px] font-mono uppercase tracking-widest text-stone-600 font-bold mb-1">01. BOTTOM LINE ADVISORY</div>
-                <div className="text-xs sm:text-sm font-semibold text-stone-900 leading-relaxed">{summaryData.bottom_line}</div>
+              <div className="p-4 bg-[#FAF9F6] border-l-2 border-stone-900">
+                <div className="text-[9px] font-mono uppercase tracking-widest text-stone-500 font-bold mb-1">01. BOTTOM LINE ADVISORY</div>
+                <div className="text-xs sm:text-sm font-medium text-stone-900 leading-relaxed">{summaryData.bottom_line}</div>
               </div>
 
               {/* 리스크 & 매트릭스 그리드 */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="p-3.5 bg-stone-50 border border-stone-200 flex flex-col gap-2">
+                <div className="p-3.5 bg-stone-50/70 border border-stone-200 flex flex-col gap-2">
                   <div className="text-[10px] font-mono uppercase tracking-wider text-stone-900 font-bold">02. TOP 3 RISKS</div>
                   {(summaryData.top_3_risks || []).map((r, i) => (
                     <div key={i} className="text-[11px] leading-relaxed text-stone-800">
@@ -835,7 +832,7 @@ export default function DebateRoomPro() {
                   ))}
                 </div>
 
-                <div className="p-3.5 bg-stone-50 border border-stone-200 flex flex-col gap-2">
+                <div className="p-3.5 bg-stone-50/70 border border-stone-200 flex flex-col gap-2">
                   <div className="text-[10px] font-mono uppercase tracking-wider text-stone-900 font-bold">03. ALIGNMENT MATRIX</div>
                   {(summaryData.alignment_matrix || []).map((m, i) => (
                     <div key={i} className="text-[11px] leading-relaxed text-stone-800">
@@ -849,7 +846,7 @@ export default function DebateRoomPro() {
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 <span className="text-[10px] font-mono uppercase text-stone-500 font-bold mr-1">ACTION MANDATE:</span>
                 {(summaryData.next_actions || []).map((a, i) => (
-                  <div key={i} className="bg-stone-100 border border-stone-300 px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
+                  <div key={i} className="bg-stone-50 border border-stone-300 px-2.5 py-1 text-[10px] font-mono flex items-center gap-1.5">
                     <span className="text-stone-800 font-medium">{a.action}</span>
                     <span className="text-stone-500 font-semibold">{a.owner}</span>
                     <span className="text-stone-900 font-bold">{a.due}</span>
